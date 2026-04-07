@@ -30,7 +30,9 @@ export default function AuthPage() {
         throw new Error(data.error || "Login failed.");
       }
 
-      router.push("/admin");
+      // Use window.location.href for full refresh to ensure the admin_session cookie is 
+      // properly recognized by the Next.js middleware immediately.
+      window.location.href = "/admin";
     } catch (err) {
       setError(err.message || "An error occurred during sign in.");
     } finally {
