@@ -1,12 +1,37 @@
+"use client";
+
 import Link from "next/link";
-import { Package, ShieldCheck, Clock, MessageSquare, Star, ArrowRight, BookOpen } from "lucide-react";
+import { Package, ShieldCheck, Clock, MessageSquare, Star, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function ClientPortal() {
+  const searchParams = useSearchParams();
+  const [showSuccess, setShowSuccess] = useState(false);
   const orders = [];
+
+  useEffect(() => {
+    if (searchParams.get("verified") === "true") {
+      setShowSuccess(true);
+    }
+  }, [searchParams]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+      
+      {/* Verification Success Message */}
+      {showSuccess && (
+        <div className="mb-8 bg-green-500/10 border border-green-500/50 p-6 rounded-2xl flex items-center gap-4 text-green-400 animate-slide-up">
+          <CheckCircle2 className="shrink-0" size={24} />
+          <div>
+            <h3 className="font-bold">Email Verified Successfully!</h3>
+            <p className="text-sm opacity-90">Your account is now fully active. You can explore the exclusive collection and manage your vault.</p>
+          </div>
+          <button onClick={() => setShowSuccess(false)} className="ml-auto text-xs uppercase font-bold hover:underline">Dismiss</button>
+        </div>
+      )}
+
       {/* Header & VIP Banner */}
       <div className="bg-[#121212] border border-[#D4AF37]/30 rounded-2xl p-8 mb-10 relative overflow-hidden flex flex-col md:flex-row items-center justify-between">
         <div className="absolute inset-0 bg-gradient-to-r from-[#D4AF37]/5 to-transparent z-0"></div>
@@ -25,9 +50,9 @@ export default function ClientPortal() {
           </div>
         </div>
         <div className="relative z-10">
-          <button className="flex items-center gap-2 bg-[#D4AF37] text-black px-6 py-3 rounded uppercase text-xs font-bold tracking-widest hover:bg-[#B5952F] transition-colors">
+          <Link href="/contact" className="flex items-center gap-2 bg-[#D4AF37] text-black px-6 py-3 rounded uppercase text-xs font-bold tracking-widest hover:bg-[#B5952F] transition-colors">
             <MessageSquare size={16} /> Contact Personal Jeweler
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -42,7 +67,7 @@ export default function ClientPortal() {
               <h2 className="text-2xl font-serif flex items-center gap-2">
                 <ShieldCheck className="text-[#D4AF37]" /> My Vault
               </h2>
-              <button className="text-xs text-[#D4AF37] uppercase tracking-widest font-bold">View All</button>
+              <Link href="/portal?tab=vault" className="text-xs text-[#D4AF37] uppercase tracking-widest font-bold">View All</Link>
             </div>
             
             <div className="space-y-4">
@@ -65,9 +90,9 @@ export default function ClientPortal() {
                       }`}>
                         {order.status}
                       </span>
-                      <button className="text-gray-400 hover:text-white flex items-center gap-1 text-sm transition-colors">
+                      <Link href={`#`} className="text-gray-400 hover:text-white flex items-center gap-1 text-sm transition-colors">
                         Details <ArrowRight size={14} />
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 ))
@@ -88,9 +113,9 @@ export default function ClientPortal() {
                <span className="text-[#D4AF37] text-xs font-bold uppercase tracking-[0.2em] mb-2 block">Platinum Exclusive</span>
                <h3 className="text-3xl font-serif text-white mb-2">The Vanguard Collection</h3>
                <p className="text-gray-300 max-w-lg text-sm mb-4">You have early access to our upcoming collection of limited edition tourbillon watches. Only 50 pieces available worldwide.</p>
-               <button className="border border-[#D4AF37] text-[#D4AF37] px-6 py-2 uppercase text-xs font-bold tracking-widest hover:bg-[#D4AF37]/10 transition-colors backdrop-blur-sm">
+               <Link href="/products" className="inline-block border border-[#D4AF37] text-[#D4AF37] px-6 py-2 uppercase text-xs font-bold tracking-widest hover:bg-[#D4AF37] hover:text-black transition-all backdrop-blur-sm">
                  Explore Collection
-               </button>
+               </Link>
              </div>
           </section>
 
@@ -110,12 +135,12 @@ export default function ClientPortal() {
               "We are here to assist with curating your collection, providing authenticity certificates, or arranging private viewings."
             </p>
             <div className="space-y-3">
-              <button className="w-full py-3 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] transition-colors rounded text-sm text-gray-200">
+              <Link href="/contact" className="block w-full py-3 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] transition-colors rounded text-sm text-gray-200">
                 Schedule Call
-              </button>
-              <button className="w-full py-3 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] transition-colors rounded text-sm text-gray-200">
+              </Link>
+              <a href="https://wa.me/wealthyfied" className="block w-full py-3 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] transition-colors rounded text-sm text-gray-200">
                 Message on WhatsApp
-              </button>
+              </a>
             </div>
           </div>
 
@@ -123,15 +148,15 @@ export default function ClientPortal() {
           <div className="bg-[#121212] border border-[#222] rounded-2xl p-6">
             <h3 className="font-serif text-lg text-white mb-4">Services</h3>
             <div className="space-y-2">
-              <Link href="#" className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#222] transition-colors border border-[#333]">
+              <Link href="/contact" className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#222] transition-colors border border-[#333]">
                 <Clock className="text-[#D4AF37]" size={18} />
                 <span className="text-sm text-gray-300">Book Servicing & Polish</span>
               </Link>
-              <Link href="#" className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#222] transition-colors border border-[#333]">
+              <Link href="/about" className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#222] transition-colors border border-[#333]">
                 <BookOpen className="text-[#D4AF37]" size={18} />
                 <span className="text-sm text-gray-300">Digital Authenticity Library</span>
               </Link>
-              <Link href="#" className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#222] transition-colors border border-[#333]">
+              <Link href="/products" className="flex items-center gap-3 p-3 bg-[#1a1a1a] rounded-lg hover:bg-[#222] transition-colors border border-[#333]">
                 <Star className="text-[#D4AF37]" size={18} />
                 <span className="text-sm text-gray-300">My Wishlist</span>
               </Link>

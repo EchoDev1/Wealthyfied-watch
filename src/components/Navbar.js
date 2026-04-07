@@ -162,8 +162,6 @@ export default function Navbar() {
                 SIGN IN
               </Link>
             )}
-            
-            <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className="text-sm font-serif tracking-[0.2em] text-gray-500 hover:text-white uppercase mt-10">Admin Access</Link>
           </div>
         </div>
       )}
