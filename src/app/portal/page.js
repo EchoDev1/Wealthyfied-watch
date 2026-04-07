@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Package, ShieldCheck, Clock, MessageSquare, Star, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 
-export default function ClientPortal() {
+function PortalContent() {
   const searchParams = useSearchParams();
   const [showSuccess, setShowSuccess] = useState(false);
   const orders = [];
@@ -167,5 +167,13 @@ export default function ClientPortal() {
 
       </div>
     </div>
+  );
+}
+
+export default function ClientPortal() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-[#D4AF37] font-serif uppercase tracking-widest text-sm">Secure Portal Loading...</div>}>
+      <PortalContent />
+    </Suspense>
   );
 }
