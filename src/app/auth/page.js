@@ -4,6 +4,7 @@ import { ArrowRight, Lock, User as UserIcon, AlertCircle, Loader2 } from "lucide
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
@@ -18,6 +19,19 @@ export default function AuthPage() {
     setError(null);
 
     try {
+      // First, attempt standard Supabase login for regular users
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (!authError && authData.user) {
+        // Successful regular user login
+        router.push("/portal");
+        return;
+      }
+
+      // If Supabase fails, try the Admin API (for fallbacks/secure cookies)
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,13 +40,12 @@ export default function AuthPage() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed.");
+      if (res.ok) {
+        // Admin session cookie set by server, full redirect
+        window.location.href = "/admin";
+      } else {
+        throw new Error(data.error || authError?.message || "Login failed.");
       }
-
-      // Use window.location.href for full refresh to ensure the admin_session cookie is 
-      // properly recognized by the Next.js middleware immediately.
-      window.location.href = "/admin";
     } catch (err) {
       setError(err.message || "An error occurred during sign in.");
     } finally {

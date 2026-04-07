@@ -44,14 +44,14 @@ export default function RegisterPage() {
       });
 
       if (signUpError) throw signUpError;
-
+      
       // Supabase typically sends a confirmation email
-      // We'll show a success message here.
       setSuccess(true);
       
-      // Auto-redirect after showing message briefly, if auto-confirm is enabled in Supabase
+      // Auto-redirect to portal after showing message briefly, 
+      // only if auto-confirm is enabled in Supabase settings
       if (data.session) {
-        setTimeout(() => router.push("/admin"), 1500);
+        setTimeout(() => router.push("/portal"), 1500);
       }
       
     } catch (err) {

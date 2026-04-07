@@ -9,9 +9,9 @@ export default function Home() {
       <section className="relative w-full h-[90vh] flex items-center justify-center overflow-hidden">
         
         {/* Quality Seal Badge */}
-        <div className="absolute top-6 right-6 md:top-10 md:right-12 z-30 hidden md:flex items-center justify-center group opacity-80 hover:opacity-100 transition-opacity duration-500 hover:scale-105">
+        <div className="absolute top-4 right-4 md:top-10 md:right-12 z-30 flex items-center justify-center group opacity-80 hover:opacity-100 transition-opacity duration-500 hover:scale-105 scale-75 md:scale-100">
           {/* Spinning Outer Ring */}
-          <svg width="140" height="140" viewBox="0 0 100 100" className="absolute drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]" style={{ animation: 'spin 20s linear infinite' }}>
+          <svg width="120" height="120" md-width="140" md-height="140" viewBox="0 0 100 100" className="absolute drop-shadow-[0_0_20px_rgba(212,175,55,0.3)] anim-spin-slow">
             <defs>
               <linearGradient id="heroGold" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#F9F295" />
