@@ -43,10 +43,10 @@ export default function Home() {
             src="/images/hero_watch.png"
             alt="Wealthyfied Luxury Watch Banner"
             fill
-            className="object-cover object-center animate-fade-in opacity-80"
+            className="object-cover object-center md:object-center animate-fade-in opacity-100"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-black/40 to-black/80 z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#0a0a0a] z-10"></div>
         </div>
 
         <div className="relative z-20 text-center px-4 animate-slide-up mt-20 max-w-4xl mx-auto">
@@ -58,7 +58,7 @@ export default function Home() {
             <span className="text-gradient">Modern Elite</span>
           </h1>
           <p className="text-gray-300 md:text-lg mb-10 max-w-2xl mx-auto font-light">
-            Discover our curated collection of masterfully crafted wristwatches and premium men's jewelry. Make a statement that lasts forever.
+            Discover our curated collection of masterfully crafted wristwatches and premium men&apos;s jewelry. Make a statement that lasts forever.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/products" className="bg-[#D4AF37] text-black px-8 py-4 uppercase tracking-widest text-sm font-bold hover:bg-[#B5952F] hover:scale-105 transition-all duration-300 ease-out shadow-[0_0_20px_rgba(212,175,55,0.4)]">
@@ -116,7 +116,7 @@ export default function Home() {
             <div className="absolute inset-0">
               <Image 
                 src="/images/mens_jewelry.png" 
-                alt="Premium Men's Gold Chain" 
+                alt="Premium Men&apos;s Gold Chain" 
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
               />
