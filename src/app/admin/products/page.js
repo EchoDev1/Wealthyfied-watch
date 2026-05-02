@@ -17,7 +17,30 @@ export default function AdminProductsPage() {
   const [homepageProducts, setHomepageProducts] = useState(HOMEPAGE_PRODUCTS);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [imageSource, setImageSource] = useState("url");
-  const [form, setForm] = useState({ name: "", sku: "", category: "watch", price: "", stock: "", description: "" });
+  const [form, setForm] = useState({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm({ ...form, image: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFolderChange = (e) => {
+    const files = Array.from(e.target.files);
+    const firstImage = files.find(f => f.type.startsWith('image/'));
+    if (firstImage) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm({ ...form, image: reader.result });
+      };
+      reader.readAsDataURL(firstImage);
+    }
+  };
 
   const handleDelete = (id) => {
     setHomepageProducts((prev) => prev.filter((p) => p.id !== id));
@@ -167,6 +190,23 @@ export default function AdminProductsPage() {
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     className={`${inputClass} resize-none`} />
                 </div>
+                
+                {/* Image Preview Area */}
+                {form.image && (
+                  <div className="md:col-span-2 animate-fade-in">
+                    <label className={labelClass}>Image Preview</label>
+                    <div className="relative h-48 w-full bg-black rounded-xl border border-[#333] overflow-hidden group">
+                      <img src={form.image} alt="Preview" className="w-full h-full object-contain" />
+                      <button 
+                        onClick={() => setForm({ ...form, image: "" })}
+                        className="absolute top-3 right-3 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="md:col-span-2">
                   <label className={labelClass}>Select Image</label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -193,7 +233,13 @@ export default function AdminProductsPage() {
 
                   {imageSource === 'url' && (
                     <div className="animate-fade-in">
-                      <input type="text" placeholder="https://... or /images/product.png" className={inputClass} />
+                      <input 
+                        type="text" 
+                        placeholder="https://... or /images/product.png" 
+                        className={inputClass} 
+                        value={form.image.startsWith('data:') ? "" : form.image}
+                        onChange={(e) => setForm({ ...form, image: e.target.value })}
+                      />
                       <p className="text-xs text-gray-700 mt-2">Paste a public image URL or a local path.</p>
                     </div>
                   )}
@@ -201,7 +247,7 @@ export default function AdminProductsPage() {
                   {imageSource === 'file' && (
                     <div className="animate-fade-in">
                       <div className="border-2 border-dashed border-[#333] rounded-xl p-8 text-center hover:border-[#D4AF37]/50 transition-colors group cursor-pointer relative">
-                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                        <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                         <FileImage size={32} className="mx-auto text-gray-600 group-hover:text-[#D4AF37] mb-3 transition-colors" />
                         <p className="text-sm text-gray-400">Click or drag image file to upload</p>
                         <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-widest">PNG, JPG, WEBP up to 5MB</p>
@@ -212,7 +258,13 @@ export default function AdminProductsPage() {
                   {imageSource === 'folder' && (
                     <div className="animate-fade-in">
                       <div className="border-2 border-dashed border-[#333] rounded-xl p-8 text-center hover:border-[#D4AF37]/50 transition-colors group cursor-pointer relative">
-                        <input type="file" webkitdirectory="" directory="" className="absolute inset-0 opacity-0 cursor-pointer" />
+                        <input 
+                          type="file" 
+                          webkitdirectory="" 
+                          directory="" 
+                          onChange={handleFolderChange}
+                          className="absolute inset-0 opacity-0 cursor-pointer" 
+                        />
                         <FolderOpen size={32} className="mx-auto text-gray-600 group-hover:text-[#D4AF37] mb-3 transition-colors" />
                         <p className="text-sm text-gray-400">Select a folder to upload multiple images</p>
                         <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-widest">All images in folder will be scanned</p>
@@ -223,7 +275,11 @@ export default function AdminProductsPage() {
                   {imageSource === 'photos' && (
                     <div className="animate-fade-in grid grid-cols-3 gap-2 bg-[#1a1a1a] p-3 rounded-lg border border-[#333] max-h-40 overflow-y-auto">
                       {['/images/leather_watch.png', '/images/mens_jewelry.png', '/images/hero_watch.png'].map((img, i) => (
-                        <div key={i} className="aspect-square bg-black rounded border border-[#333] overflow-hidden hover:border-[#D4AF37] cursor-pointer transition-colors relative group">
+                        <div 
+                          key={i} 
+                          onClick={() => setForm({ ...form, image: img })}
+                          className={`aspect-square bg-black rounded border overflow-hidden hover:border-[#D4AF37] cursor-pointer transition-colors relative group ${form.image === img ? 'border-[#D4AF37]' : 'border-[#333]'}`}
+                        >
                           <img src={img} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                         </div>
                       ))}
