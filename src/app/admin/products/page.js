@@ -15,7 +15,11 @@ const HOMEPAGE_PRODUCTS = [
 export default function AdminProductsPage() {
   const [showModal, setShowModal] = useState(false);
   const [homepageProducts, setHomepageProducts] = useState(HOMEPAGE_PRODUCTS);
+  const [catalogProducts, setCatalogProducts] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
   const [imageSource, setImageSource] = useState("url");
   const [form, setForm] = useState({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
 
@@ -42,10 +46,49 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDelete = (id) => {
-    setHomepageProducts((prev) => prev.filter((p) => p.id !== id));
+  const handleDelete = (id, isHomepage = false) => {
+    if (isHomepage) {
+      setHomepageProducts((prev) => prev.filter((p) => p.id !== id));
+    } else {
+      setCatalogProducts((prev) => prev.filter((p) => p.id !== id));
+    }
     setDeleteConfirm(null);
   };
+
+  const handlePublish = (e) => {
+    e.preventDefault();
+    if (!form.name || !form.price || !form.image) {
+      alert("Please fill in the required fields (Name, Price, and Image)");
+      return;
+    }
+
+    setIsPublishing(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      const newProduct = {
+        ...form,
+        id: `prod-${Date.now()}`,
+        dateAdded: new Date().toLocaleDateString()
+      };
+      
+      setCatalogProducts([newProduct, ...catalogProducts]);
+      setIsPublishing(false);
+      setPublishSuccess(true);
+      
+      // Reset form after success
+      setTimeout(() => {
+        setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+        setShowModal(false);
+        setPublishSuccess(false);
+      }, 1500);
+    }, 800);
+  };
+
+  const filteredProducts = catalogProducts.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -109,33 +152,71 @@ export default function AdminProductsPage() {
       <div className="bg-[#121212] border border-[#222] rounded-xl overflow-hidden p-6">
         <div className="relative w-64 mb-6">
           <Search className="absolute left-3 top-2.5 text-gray-600" size={16} />
-          <input type="text" placeholder="Search catalog..." disabled
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-10 py-2 text-gray-700 text-sm cursor-not-allowed placeholder:text-gray-700" />
+          <input 
+            type="text" 
+            placeholder="Search catalog..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-10 py-2 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-colors placeholder:text-gray-700" 
+          />
         </div>
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-sm border-collapse">
           <thead className="text-gray-600 uppercase tracking-wider text-xs border-b border-[#222]">
             <tr>
-              <th className="pb-3 font-medium">Item Name</th>
-              <th className="pb-3 font-medium">SKU</th>
-              <th className="pb-3 font-medium">Category</th>
-              <th className="pb-3 font-medium">Stock</th>
-              <th className="pb-3 font-medium">Price</th>
-              <th className="pb-3 font-medium text-right">Actions</th>
+              <th className="pb-3 font-medium px-2">Item Name</th>
+              <th className="pb-3 font-medium px-2">SKU</th>
+              <th className="pb-3 font-medium px-2">Category</th>
+              <th className="pb-3 font-medium px-2">Stock</th>
+              <th className="pb-3 font-medium px-2">Price</th>
+              <th className="pb-3 font-medium text-right px-2">Actions</th>
             </tr>
           </thead>
+          <tbody>
+            {filteredProducts.map((product) => (
+              <tr key={product.id} className="border-b border-[#1a1a1a] hover:bg-[#151515] transition-colors group">
+                <td className="py-4 px-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded bg-black border border-[#222] overflow-hidden">
+                      <img src={product.image} className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-white font-medium">{product.name}</span>
+                  </div>
+                </td>
+                <td className="py-4 px-2 text-gray-400">{product.sku}</td>
+                <td className="py-4 px-2 capitalize"><span className="px-2 py-0.5 rounded-full bg-[#1a1a1a] text-[#D4AF37] text-[10px] font-bold border border-[#D4AF37]/20">{product.category}</span></td>
+                <td className="py-4 px-2 text-white">{product.stock}</td>
+                <td className="py-4 px-2 text-[#D4AF37] font-semibold">{product.price.startsWith('$') || product.price.startsWith('₦') ? product.price : `$${product.price}`}</td>
+                <td className="py-4 px-2 text-right">
+                  <button 
+                    onClick={() => handleDelete(product.id)}
+                    className="text-gray-600 hover:text-red-400 p-1.5 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
-        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-          <div className="h-16 w-16 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
-            <Package size={26} className="text-[#333]" />
+
+        {filteredProducts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+            <div className="h-16 w-16 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
+              <Package size={26} className="text-[#333]" />
+            </div>
+            <h3 className="text-gray-500 font-serif text-xl">
+              {searchQuery ? "No matching products found" : "No Products Added Yet"}
+            </h3>
+            <p className="text-gray-700 text-sm max-w-sm leading-relaxed">
+              {searchQuery ? `We couldn't find anything matching "${searchQuery}"` : "Click Add Product above to list your first watch or jewelry item."}
+            </p>
+            {!searchQuery && (
+              <button onClick={() => setShowModal(true)} className="mt-2 flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-6 py-2.5 rounded text-black font-bold text-sm uppercase tracking-widest transition-colors">
+                <Plus size={16} /> Add First Product
+              </button>
+            )}
           </div>
-          <h3 className="text-gray-500 font-serif text-xl">No Products Added Yet</h3>
-          <p className="text-gray-700 text-sm max-w-sm leading-relaxed">
-            Click <span className="text-[#D4AF37]">Add Product</span> above to list your first watch or jewelry item.
-          </p>
-          <button onClick={() => setShowModal(true)} className="mt-2 flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-6 py-2.5 rounded text-black font-bold text-sm uppercase tracking-widest transition-colors">
-            <Plus size={16} /> Add First Product
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Add Product Modal */}
@@ -297,8 +378,24 @@ export default function AdminProductsPage() {
               <button onClick={() => setShowModal(false)} className="px-5 py-2.5 text-gray-400 hover:text-white border border-[#333] hover:border-[#555] rounded text-sm uppercase tracking-widest transition-colors">
                 Cancel
               </button>
-              <button className="flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-6 py-2.5 rounded text-black font-bold text-sm uppercase tracking-widest transition-colors">
-                <Save size={16} /> Publish Product
+              <button 
+                onClick={handlePublish}
+                disabled={isPublishing || publishSuccess}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded text-black font-bold text-sm uppercase tracking-widest transition-all ${
+                  publishSuccess 
+                    ? "bg-green-500" 
+                    : "bg-[#D4AF37] hover:bg-[#B5952F] shadow-[0_0_15px_rgba(212,175,55,0.2)]"
+                } disabled:opacity-70 disabled:cursor-not-allowed`}
+              >
+                {isPublishing ? (
+                  <span className="animate-pulse">Publishing...</span>
+                ) : publishSuccess ? (
+                  <>Published ✓</>
+                ) : (
+                  <>
+                    <Save size={16} /> Publish Product
+                  </>
+                )}
               </button>
             </div>
           </div>

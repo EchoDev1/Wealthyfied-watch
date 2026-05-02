@@ -1,11 +1,25 @@
-import { Mail, Phone, MapPin, Send } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { Mail, Phone, MapPin, Send, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Contact Us - Wealthyfied Watch",
-};
-
 export default function ContactPage() {
+  const [isSending, setIsSending] = useState(false);
+  const [isSent, setIsSent] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSending(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsSending(false);
+      setIsSent(true);
+      // Reset after success message
+      setTimeout(() => setIsSent(false), 5000);
+    }, 1500);
+  };
+
   return (
     <div className="min-h-[calc(100vh-80px)] pt-24 pb-12 px-4 bg-[#050505]">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -65,35 +79,61 @@ export default function ContactPage() {
         <div className="bg-[#121212] p-8 md:p-10 rounded-xl border border-[#222] animate-slide-up shadow-2xl relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 rounded-bl-full pointer-events-none"></div>
           
-          <h2 className="text-2xl font-serif text-white mb-8">Send a Message</h2>
-          
-          <form className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">First Name</label>
-                <input type="text" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors" />
+          {isSent ? (
+            <div className="py-20 text-center space-y-6 animate-fade-in">
+              <div className="h-16 w-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/30">
+                <CheckCircle2 size={32} className="text-green-500" />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Last Name</label>
-                <input type="text" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors" />
-              </div>
+              <h2 className="text-2xl font-serif text-white">Message Sent</h2>
+              <p className="text-gray-400 text-sm">Your inquiry has been received. A Wealthyfied representative will contact you within the hour.</p>
+              <button onClick={() => setIsSent(false)} className="text-[#D4AF37] text-xs uppercase tracking-widest font-bold">Send another message</button>
             </div>
+          ) : (
+            <>
+              <h2 className="text-2xl font-serif text-white mb-8">Send a Message</h2>
+              
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">First Name</label>
+                    <input required type="text" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Last Name</label>
+                    <input required type="text" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors" />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Email Address</label>
-              <input type="email" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors" />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Email Address</label>
+                  <input required type="email" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors" />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Message</label>
-              <textarea rows="4" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors resize-none"></textarea>
-            </div>
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Message</label>
+                  <textarea required rows="4" className="w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-3 text-white focus:outline-none focus:border-[#D4AF37] transition-colors resize-none"></textarea>
+                </div>
 
-            <button type="submit" className="w-full bg-[#D4AF37] text-black font-bold uppercase tracking-widest py-4 rounded-md hover:bg-[#B5952F] transition-all flex justify-center items-center shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)]">
-              Send Message
-              <Send size={18} className="ml-2" />
-            </button>
-          </form>
+                <button 
+                  type="submit" 
+                  disabled={isSending}
+                  className="w-full bg-[#D4AF37] text-black font-bold uppercase tracking-widest py-4 rounded-md hover:bg-[#B5952F] transition-all flex justify-center items-center shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isSending ? (
+                    <>
+                      <Loader2 className="mr-2 animate-spin" size={18} />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      Send Message
+                      <Send size={18} className="ml-2" />
+                    </>
+                  )}
+                </button>
+              </form>
+            </>
+          )}
         </div>
 
       </div>

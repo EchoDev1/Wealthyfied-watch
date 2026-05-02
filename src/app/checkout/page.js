@@ -1,12 +1,42 @@
-import { ShieldCheck, Truck, CreditCard, CheckCircle2 } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ShieldCheck, Truck, CreditCard, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-export const metadata = {
-  title: "Secure Checkout - Wealthyfied Watch",
-};
-
 export default function CheckoutPage() {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handlePayment = () => {
+    setIsProcessing(true);
+    // Simulate payment processing
+    setTimeout(() => {
+      setIsProcessing(false);
+      setIsSuccess(true);
+    }, 2000);
+  };
+
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#050505] px-4">
+        <div className="max-w-md w-full text-center space-y-6 animate-fade-in">
+          <div className="h-20 w-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/30">
+            <CheckCircle2 size={40} className="text-green-500" />
+          </div>
+          <h1 className="text-3xl font-serif text-white">Payment Successful</h1>
+          <p className="text-gray-400">Your order #WF-92831 has been confirmed. A concierge will contact you shortly via email with your bespoke delivery timeline.</p>
+          <div className="pt-6">
+            <Link href="/" className="inline-flex items-center gap-2 text-[#D4AF37] hover:text-white transition-colors uppercase tracking-widest text-xs font-bold">
+              <ArrowLeft size={16} /> Return to Boutique
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pt-24 pb-12 px-4 bg-[#050505]">
       <div className="max-w-6xl mx-auto">
@@ -19,7 +49,7 @@ export default function CheckoutPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Order Summary Side */}
+          {/* ... Order Summary Side ... */}
           <div className="lg:col-span-1 order-2 lg:order-1 space-y-6">
             <div className="bg-[#121212] border border-[#222] rounded-xl p-6">
               <h2 className="text-lg font-serif mb-4 pb-4 border-b border-[#222] text-white">Order Summary</h2>
@@ -85,7 +115,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Payment Gateway Section (Opay / Card style) */}
+              {/* Payment Gateway Section */}
               <div>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-[#333] text-white flex items-center justify-center font-bold text-sm border border-[#555]">2</div>
@@ -110,15 +140,6 @@ export default function CheckoutPage() {
                       <p className="text-xs text-gray-500">Securely pay via Bank Transfer, USSD, or Card</p>
                     </div>
                   </label>
-
-                  <label className="flex items-center p-4 border border-[#333] rounded-lg hover:border-[#555] cursor-pointer transition-all bg-[#0a0a0a]">
-                    <input type="radio" name="payment" className="text-[#D4AF37] focus:ring-[#D4AF37] outline-none" />
-                    <div className="mx-4 font-bold text-green-500 text-xl italic tracking-tighter">Opay</div>
-                    <div className="flex-1">
-                      <p className="text-white font-medium text-sm">Opay Fast Checkout</p>
-                      <p className="text-xs text-gray-500">Pay with your Opay Wallet or Bank Transfer</p>
-                    </div>
-                  </label>
                 </div>
 
 
@@ -136,9 +157,22 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="mt-8">
-                  <button className="w-full bg-[#D4AF37] hover:bg-[#B5952F] text-black font-bold uppercase tracking-widest py-4 rounded-md transition-all shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] flex items-center justify-center">
-                    Pay $1,850.00 Securely
-                    <CheckCircle2 size={18} className="ml-2" />
+                  <button 
+                    onClick={handlePayment}
+                    disabled={isProcessing}
+                    className="w-full bg-[#D4AF37] hover:bg-[#B5952F] text-black font-bold uppercase tracking-widest py-4 rounded-md transition-all shadow-[0_0_15px_rgba(212,175,55,0.2)] hover:shadow-[0_0_25px_rgba(212,175,55,0.4)] flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 animate-spin" size={18} />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Pay $1,850.00 Securely
+                        <CheckCircle2 size={18} className="ml-2" />
+                      </>
+                    )}
                   </button>
                   <p className="text-center text-xs text-gray-500 mt-4">
                     By confirming this order, you accept our bespoke return policy and terms of service.
