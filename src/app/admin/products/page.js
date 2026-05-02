@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Search, Package, X, Save, Trash2 } from "lucide-react";
+import { Plus, Search, Package, X, Save, Trash2, Camera, FileImage, FolderOpen, Link as LinkIcon } from "lucide-react";
 
 const inputClass = "w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-colors placeholder:text-gray-600";
 const labelClass = "block text-xs uppercase tracking-widest text-gray-500 font-semibold mb-2";
@@ -16,6 +16,7 @@ export default function AdminProductsPage() {
   const [showModal, setShowModal] = useState(false);
   const [homepageProducts, setHomepageProducts] = useState(HOMEPAGE_PRODUCTS);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [imageSource, setImageSource] = useState("url");
   const [form, setForm] = useState({ name: "", sku: "", category: "watch", price: "", stock: "", description: "" });
 
   const handleDelete = (id) => {
@@ -167,9 +168,70 @@ export default function AdminProductsPage() {
                     className={`${inputClass} resize-none`} />
                 </div>
                 <div className="md:col-span-2">
-                  <label className={labelClass}>Product Image URL</label>
-                  <input type="text" placeholder="https://... or /images/product.png" className={inputClass} />
-                  <p className="text-xs text-gray-700 mt-1">Paste a public image URL or upload to /public/images/ first.</p>
+                  <label className={labelClass}>Select Image</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    {[
+                      { id: 'photos', label: 'Photos', icon: <Camera size={16} /> },
+                      { id: 'file', label: 'File', icon: <FileImage size={16} /> },
+                      { id: 'folder', label: 'Folder', icon: <FolderOpen size={16} /> },
+                      { id: 'url', label: 'URL', icon: <LinkIcon size={16} /> },
+                    ].map((src) => (
+                      <button
+                        key={src.id}
+                        type="button"
+                        onClick={() => setImageSource(src.id)}
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all ${
+                          imageSource === src.id
+                            ? "bg-[#D4AF37] border-[#D4AF37] text-black"
+                            : "bg-[#1a1a1a] border-[#333] text-gray-400 hover:border-[#555] hover:text-white"
+                        }`}
+                      >
+                        {src.icon} {src.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {imageSource === 'url' && (
+                    <div className="animate-fade-in">
+                      <input type="text" placeholder="https://... or /images/product.png" className={inputClass} />
+                      <p className="text-xs text-gray-700 mt-2">Paste a public image URL or a local path.</p>
+                    </div>
+                  )}
+
+                  {imageSource === 'file' && (
+                    <div className="animate-fade-in">
+                      <div className="border-2 border-dashed border-[#333] rounded-xl p-8 text-center hover:border-[#D4AF37]/50 transition-colors group cursor-pointer relative">
+                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                        <FileImage size={32} className="mx-auto text-gray-600 group-hover:text-[#D4AF37] mb-3 transition-colors" />
+                        <p className="text-sm text-gray-400">Click or drag image file to upload</p>
+                        <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-widest">PNG, JPG, WEBP up to 5MB</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {imageSource === 'folder' && (
+                    <div className="animate-fade-in">
+                      <div className="border-2 border-dashed border-[#333] rounded-xl p-8 text-center hover:border-[#D4AF37]/50 transition-colors group cursor-pointer relative">
+                        <input type="file" webkitdirectory="" directory="" className="absolute inset-0 opacity-0 cursor-pointer" />
+                        <FolderOpen size={32} className="mx-auto text-gray-600 group-hover:text-[#D4AF37] mb-3 transition-colors" />
+                        <p className="text-sm text-gray-400">Select a folder to upload multiple images</p>
+                        <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-widest">All images in folder will be scanned</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {imageSource === 'photos' && (
+                    <div className="animate-fade-in grid grid-cols-3 gap-2 bg-[#1a1a1a] p-3 rounded-lg border border-[#333] max-h-40 overflow-y-auto">
+                      {['/images/leather_watch.png', '/images/mens_jewelry.png', '/images/hero_watch.png'].map((img, i) => (
+                        <div key={i} className="aspect-square bg-black rounded border border-[#333] overflow-hidden hover:border-[#D4AF37] cursor-pointer transition-colors relative group">
+                          <img src={img} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      ))}
+                      <div className="aspect-square bg-[#0a0a0a] rounded border border-[#333] border-dashed flex items-center justify-center text-gray-700 hover:text-gray-500 cursor-pointer">
+                        <Plus size={20} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
