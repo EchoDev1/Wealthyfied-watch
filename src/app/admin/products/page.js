@@ -197,7 +197,7 @@ export default function AdminProductsPage() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h2 className="text-lg font-serif text-white">Homepage Featured Products</h2>
-              <p className="text-xs text-gray-500 mt-0.5">These are the placeholder cards on the public homepage. Delete them when you're ready to add your real products.</p>
+              <p className="text-xs text-gray-500 mt-0.5">These are the placeholder cards on the public homepage. Delete them when you&apos;re ready to add your real products.</p>
             </div>
             <span className="text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded-full">Placeholder</span>
           </div>
@@ -262,7 +262,7 @@ export default function AdminProductsPage() {
                 <td className="py-4 px-2">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded bg-black border border-[#222] overflow-hidden">
-                      <img src={product.image} className="w-full h-full object-cover" />
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                     </div>
                     <span className="text-white font-medium">{product.name}</span>
                   </div>
@@ -446,7 +446,7 @@ export default function AdminProductsPage() {
                           onClick={() => setForm({ ...form, image: img })}
                           className={`aspect-square bg-black rounded border overflow-hidden hover:border-[#D4AF37] cursor-pointer transition-colors relative group ${form.image === img ? 'border-[#D4AF37]' : 'border-[#333]'}`}
                         >
-                          <img src={img} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                          <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                         </div>
                       ))}
                       <div className="aspect-square bg-[#0a0a0a] rounded border border-[#333] border-dashed flex items-center justify-center text-gray-700 hover:text-gray-500 cursor-pointer">

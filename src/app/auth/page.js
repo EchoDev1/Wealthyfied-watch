@@ -166,7 +166,7 @@ export default function AuthPage() {
 
           <div className="text-center mt-6">
             <p className="text-sm text-gray-400">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/auth/register" className="font-medium text-[#D4AF37] hover:text-[#B5952F] hover:underline">
                 Register now
               </Link>

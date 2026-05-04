@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-serif mb-1">Director's Overview</h1>
+        <h1 className="text-3xl font-serif mb-1">Director&apos;s Overview</h1>
         <p className="text-gray-400 text-sm">Welcome to the Wealthyfied admin panel. Data will populate as users interact with the platform.</p>
       </div>
 
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
           </div>
           <h3 className="text-gray-500 font-serif text-xl">No Orders Yet</h3>
           <p className="text-gray-700 text-sm max-w-xs leading-relaxed">
-            Once customers start placing orders, they'll appear here with full details including status, amount, and tracking.
+            Once customers start placing orders, they&apos;ll appear here with full details including status, amount, and tracking.
           </p>
         </div>
       </div>

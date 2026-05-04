@@ -13,7 +13,8 @@ function PortalContent() {
 
   useEffect(() => {
     if (searchParams.get("verified") === "true") {
-      setShowSuccess(true);
+      const timer = setTimeout(() => setShowSuccess(true), 0);
+      return () => clearTimeout(timer);
     }
   }, [searchParams]);
 
@@ -132,7 +133,7 @@ function PortalContent() {
             <h3 className="font-serif text-xl text-white">Wealthyfied Advisor</h3>
             <p className="text-[#D4AF37] text-xs uppercase tracking-widest font-bold mb-4">Dedicated Concierge</p>
             <p className="text-gray-400 text-sm mb-6">
-              "We are here to assist with curating your collection, providing authenticity certificates, or arranging private viewings."
+              &quot;We are here to assist with curating your collection, providing authenticity certificates, or arranging private viewings.&quot;
             </p>
             <div className="space-y-3">
               <Link href="/contact" className="block w-full py-3 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] transition-colors rounded text-sm text-gray-200">
