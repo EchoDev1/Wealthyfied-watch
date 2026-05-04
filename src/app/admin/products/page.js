@@ -118,6 +118,12 @@ export default function AdminProductsPage() {
     setIsPublishing(true);
     
     try {
+      // Check for Supabase session (RLS requires a real Supabase user)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Supabase Authentication Missing: You are likely logged in via the Emergency Admin fallback. To publish products, you must create a real Admin account in Supabase and sign in with it, or disable Row Level Security (RLS) on the products table.");
+      }
+
       // Clean price (remove symbols)
       const numericPrice = parseFloat(form.price.replace(/[^\d.]/g, ''));
       
@@ -125,6 +131,18 @@ export default function AdminProductsPage() {
         throw new Error("Invalid price format");
       }
 
+      // Check image size if it's a data URL
+      if (form.image.startsWith('data:')) {
+        const sizeInBytes = Math.round((form.image.length * 3) / 4);
+        const sizeInMB = sizeInBytes / (1024 * 1024);
+        console.log(`Payload image size: ${sizeInMB.toFixed(2)}MB`);
+        
+        if (sizeInMB > 0.8) {
+          throw new Error(`Image is too large (${sizeInMB.toFixed(2)}MB). Please use an image smaller than 0.5MB or use an image URL instead.`);
+        }
+      }
+
+      console.log("Attempting to publish to Supabase...");
       const { data, error } = await supabase
         .from('products')
         .insert([{
@@ -157,7 +175,15 @@ export default function AdminProductsPage() {
       }, 1500);
     } catch (error) {
       console.error("Error publishing product:", error);
-      alert("Error: " + (error.message || "Failed to save to database"));
+      
+      let errorMessage = error.message || "Failed to save to database";
+      
+      // Specifically handle the "Load failed" / network error
+      if (errorMessage.toLowerCase().includes("load failed") || error.name === "TypeError") {
+        errorMessage = "Network Connection Error: Could not reach the database. This usually happens if the Supabase URL is incorrect, blocked by an ad-blocker, or if the image size is too large for the network request.";
+      }
+      
+      alert("Error: " + errorMessage);
     } finally {
       setIsPublishing(false);
     }

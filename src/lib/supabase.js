@@ -1,6 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-project.supabase.co";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
+if (!supabaseUrl || supabaseUrl.includes("placeholder")) {
+  console.warn("⚠️ Supabase URL is missing or using placeholder. Database features will fail.");
+}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+  supabaseUrl || "https://placeholder-project.supabase.co", 
+  supabaseAnonKey || "placeholder-anon-key"
+);
