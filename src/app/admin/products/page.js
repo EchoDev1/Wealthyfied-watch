@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Search, Package, X, Save, Trash2, Camera, FileImage, FolderOpen, Link as LinkIcon, RefreshCcw } from "lucide-react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
 const inputClass = "w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-colors placeholder:text-gray-600";
@@ -206,7 +207,7 @@ export default function AdminProductsPage() {
               <div key={product.id} className="flex items-center justify-between p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-lg bg-black border border-[#333] overflow-hidden relative">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover opacity-70" />
+                    <Image src={product.image} alt={product.name} width={48} height={48} className="w-full h-full object-cover opacity-70" />
                   </div>
                   <div>
                     <p className="text-white font-medium text-sm">{product.name}</p>
@@ -262,7 +263,7 @@ export default function AdminProductsPage() {
                 <td className="py-4 px-2">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded bg-black border border-[#222] overflow-hidden">
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                      <Image src={product.image} alt={product.name} width={32} height={32} className="w-full h-full object-cover" />
                     </div>
                     <span className="text-white font-medium">{product.name}</span>
                   </div>
@@ -362,7 +363,7 @@ export default function AdminProductsPage() {
                   <div className="md:col-span-2 animate-fade-in">
                     <label className={labelClass}>Image Preview</label>
                     <div className="relative h-48 w-full bg-black rounded-xl border border-[#333] overflow-hidden group">
-                      <img src={form.image} alt="Preview" className="w-full h-full object-contain" />
+                      <Image src={form.image} alt="Preview" fill className="w-full h-full object-contain" />
                       <button 
                         onClick={() => setForm({ ...form, image: "" })}
                         className="absolute top-3 right-3 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -446,7 +447,7 @@ export default function AdminProductsPage() {
                           onClick={() => setForm({ ...form, image: img })}
                           className={`aspect-square bg-black rounded border overflow-hidden hover:border-[#D4AF37] cursor-pointer transition-colors relative group ${form.image === img ? 'border-[#D4AF37]' : 'border-[#333]'}`}
                         >
-                          <img src={img} alt={`Preview ${i}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                          <Image src={img} alt={`Preview ${i}`} width={100} height={100} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                         </div>
                       ))}
                       <div className="aspect-square bg-[#0a0a0a] rounded border border-[#333] border-dashed flex items-center justify-center text-gray-700 hover:text-gray-500 cursor-pointer">
