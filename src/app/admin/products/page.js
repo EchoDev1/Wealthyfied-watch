@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Search, Package, X, Save, Trash2, Camera, FileImage, FolderOpen, Link as LinkIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Search, Package, X, Save, Trash2, Camera, FileImage, FolderOpen, Link as LinkIcon, RefreshCcw } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const inputClass = "w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-colors placeholder:text-gray-600";
 const labelClass = "block text-xs uppercase tracking-widest text-gray-500 font-semibold mb-2";
@@ -19,9 +20,46 @@ export default function AdminProductsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [imageSource, setImageSource] = useState("url");
   const [form, setForm] = useState({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+
+  // Fetch products from Supabase on mount
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Map database fields to UI format
+      const formatted = data.map(p => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        price: p.price.toString(),
+        stock: p.stock,
+        description: p.description,
+        image: p.metadata?.image || "/images/leather_watch.png",
+        dateAdded: new Date(p.created_at).toLocaleDateString()
+      }));
+      
+      setCatalogProducts(formatted);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -46,16 +84,30 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleDelete = (id, isHomepage = false) => {
+  const handleDelete = async (id, isHomepage = false) => {
     if (isHomepage) {
       setHomepageProducts((prev) => prev.filter((p) => p.id !== id));
-    } else {
-      setCatalogProducts((prev) => prev.filter((p) => p.id !== id));
+      setDeleteConfirm(null);
+      return;
     }
-    setDeleteConfirm(null);
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setCatalogProducts((prev) => prev.filter((p) => p.id !== id));
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      alert("Failed to delete product. Check console for details.");
+    }
   };
 
-  const handlePublish = (e) => {
+  const handlePublish = async (e) => {
     e.preventDefault();
     if (!form.name || !form.price || !form.image) {
       alert("Please fill in the required fields (Name, Price, and Image)");
@@ -64,16 +116,36 @@ export default function AdminProductsPage() {
 
     setIsPublishing(true);
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Clean price (remove symbols)
+      const numericPrice = parseFloat(form.price.replace(/[^\d.]/g, ''));
+      
+      if (isNaN(numericPrice)) {
+        throw new Error("Invalid price format");
+      }
+
+      const { data, error } = await supabase
+        .from('products')
+        .insert([{
+          name: form.name,
+          sku: form.sku || `SKU-${Date.now()}`,
+          description: form.description,
+          category: form.category,
+          price: numericPrice,
+          stock: parseInt(form.stock) || 0,
+          metadata: { image: form.image }
+        }])
+        .select();
+
+      if (error) throw error;
+
       const newProduct = {
         ...form,
-        id: `prod-${Date.now()}`,
+        id: data[0].id,
         dateAdded: new Date().toLocaleDateString()
       };
       
       setCatalogProducts([newProduct, ...catalogProducts]);
-      setIsPublishing(false);
       setPublishSuccess(true);
       
       // Reset form after success
@@ -82,7 +154,12 @@ export default function AdminProductsPage() {
         setShowModal(false);
         setPublishSuccess(false);
       }, 1500);
-    }, 800);
+    } catch (error) {
+      console.error("Error publishing product:", error);
+      alert("Error: " + (error.message || "Failed to save to database"));
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const filteredProducts = catalogProducts.filter(p => 
@@ -98,12 +175,20 @@ export default function AdminProductsPage() {
           <h1 className="text-3xl font-serif text-white">Inventory</h1>
           <p className="text-gray-400 text-sm">Manage the entire watch and jewelry collection catalog.</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-4 py-2 rounded-md text-black font-bold text-sm uppercase transition-colors shadow-[0_0_12px_rgba(212,175,55,0.3)]"
-        >
-          <Plus size={16} /> Add Product
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={fetchProducts}
+            className="flex items-center gap-2 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] px-4 py-2 rounded-md text-gray-400 hover:text-white transition-colors"
+          >
+            <RefreshCcw size={16} className={isLoading ? "animate-spin" : ""} />
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-4 py-2 rounded-md text-black font-bold text-sm uppercase transition-colors shadow-[0_0_12px_rgba(212,175,55,0.3)]"
+          >
+            <Plus size={16} /> Add Product
+          </button>
+        </div>
       </div>
 
       {/* Homepage Featured Products (deletable) */}

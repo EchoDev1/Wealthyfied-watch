@@ -1,8 +1,50 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Star } from "lucide-react";
+import { ArrowRight, Star, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function Home() {
+  const [featuredProducts, setFeaturedProducts] = useState({ watch: null, jewelry: null });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchFeatured() {
+      try {
+        // Fetch latest watch
+        const { data: watchData } = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', 'watch')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        // Fetch latest jewelry
+        const { data: jewelryData } = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', 'jewelry')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        setFeaturedProducts({
+          watch: watchData?.[0] || null,
+          jewelry: jewelryData?.[0] || null
+        });
+      } catch (err) {
+        console.error("Error fetching featured products:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchFeatured();
+  }, []);
+
   return (
     <div className="flex flex-col w-full">
       {/* Hero Section */}
@@ -10,8 +52,7 @@ export default function Home() {
         
         {/* Quality Seal Badge */}
         <div className="absolute top-4 right-4 md:top-10 md:right-12 z-30 flex items-center justify-center group opacity-80 hover:opacity-100 transition-opacity duration-500 hover:scale-105 scale-75 md:scale-100">
-          {/* Spinning Outer Ring */}
-          <svg width="120" height="120" md-width="140" md-height="140" viewBox="0 0 100 100" className="absolute drop-shadow-[0_0_20px_rgba(212,175,55,0.3)] animate-spin-slow">
+          <svg width="120" height="120" viewBox="0 0 100 100" className="absolute drop-shadow-[0_0_20px_rgba(212,175,55,0.3)] animate-spin-slow">
             <defs>
               <linearGradient id="heroGold" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#F9F295" />
@@ -31,7 +72,6 @@ export default function Home() {
             </text>
           </svg>
           
-          {/* Static Center */}
           <div className="relative z-10 flex flex-col items-center justify-center h-[140px] w-[140px] rounded-full drop-shadow-[0_0_10px_rgba(212,175,55,0.8)]">
             <span className="font-serif text-[#D4AF37] text-3xl font-bold leading-none mb-1">100%</span>
             <span className="text-[#E0AA3E] text-[0.6rem] font-bold tracking-[0.2em] uppercase">Genuine</span>
@@ -43,7 +83,7 @@ export default function Home() {
             src="/images/hero_watch.png"
             alt="Wealthyfied Luxury Watch Banner"
             fill
-            className="object-cover object-center md:object-center animate-fade-in opacity-100"
+            className="object-cover object-center animate-fade-in opacity-100"
             priority
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#0a0a0a] z-10"></div>
@@ -78,71 +118,81 @@ export default function Home() {
           <div className="h-1 w-20 bg-[#D4AF37] mx-auto rounded-full"></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Watch Product Card */}
-          <div className="group relative rounded-xl overflow-hidden bg-[#121212] border border-[#222] hover:border-[#D4AF37]/50 transition-colors duration-500 min-h-[500px] flex flex-col justify-end">
-            <div className="absolute inset-0">
-              <Image 
-                src="/images/leather_watch.png" 
-                alt="Classic Leather Gold Dial Watch" 
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent"></div>
-            </div>
-            <div className="relative z-10 p-8">
-              <div className="flex justify-between items-end">
-                <div>
-                  <span className="text-[#D4AF37] uppercase text-xs font-bold tracking-wider mb-2 block">Best Seller</span>
-                  <h3 className="text-2xl font-serif text-white mb-2">The Executive Chronograph</h3>
-                  <div className="flex items-center gap-1 text-[#D4AF37] mb-3">
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                  </div>
-                  <p className="text-xl font-light">$1,850.00</p>
-                </div>
-                <button className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md hover:bg-[#D4AF37] hover:text-black transition-all">
-                  <ArrowRight size={20} />
-                </button>
-              </div>
-            </div>
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <Loader2 className="animate-spin text-[#D4AF37]" size={40} />
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Watch Product Card */}
+            <Link href="/products" className="group relative rounded-xl overflow-hidden bg-[#121212] border border-[#222] hover:border-[#D4AF37]/50 transition-colors duration-500 min-h-[500px] flex flex-col justify-end">
+              <div className="absolute inset-0">
+                <Image 
+                  src={featuredProducts.watch?.metadata?.image || "/images/leather_watch.png"} 
+                  alt="Featured Watch" 
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent"></div>
+              </div>
+              <div className="relative z-10 p-8">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <span className="text-[#D4AF37] uppercase text-xs font-bold tracking-wider mb-2 block">
+                      {featuredProducts.watch ? "Latest Collection" : "Best Seller"}
+                    </span>
+                    <h3 className="text-2xl font-serif text-white mb-2">
+                      {featuredProducts.watch?.name || "The Executive Chronograph"}
+                    </h3>
+                    <div className="flex items-center gap-1 text-[#D4AF37] mb-3">
+                      {[1,2,3,4,5].map(i => <Star key={i} size={16} fill="currentColor" />)}
+                    </div>
+                    <p className="text-xl font-light">
+                      {featuredProducts.watch ? `₦${parseFloat(featuredProducts.watch.price).toLocaleString()}` : "$1,850.00"}
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-[#D4AF37] group-hover:text-black transition-all">
+                    <ArrowRight size={20} />
+                  </div>
+                </div>
+              </div>
+            </Link>
 
-          {/* Jewelry Product Card */}
-          <div className="group relative rounded-xl overflow-hidden bg-[#121212] border border-[#222] hover:border-[#D4AF37]/50 transition-colors duration-500 min-h-[500px] flex flex-col justify-end">
-            <div className="absolute inset-0">
-              <Image 
-                src="/images/mens_jewelry.png" 
-                alt="Premium Men&apos;s Gold Chain" 
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent"></div>
-            </div>
-            <div className="relative z-10 p-8">
-              <div className="flex justify-between items-end">
-                <div>
-                  <span className="text-[#a3a3a3] uppercase text-xs font-bold tracking-wider mb-2 block">New Arrival</span>
-                  <h3 className="text-2xl font-serif text-white mb-2">Royal Cuban Link</h3>
-                  <div className="flex items-center gap-1 text-[#D4AF37] mb-3">
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                    <Star size={16} fill="currentColor" />
-                  </div>
-                  <p className="text-xl font-light">$940.00</p>
-                </div>
-                <button className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md hover:bg-[#D4AF37] hover:text-black transition-all">
-                  <ArrowRight size={20} />
-                </button>
+            {/* Jewelry Product Card */}
+            <Link href="/jewelry" className="group relative rounded-xl overflow-hidden bg-[#121212] border border-[#222] hover:border-[#D4AF37]/50 transition-colors duration-500 min-h-[500px] flex flex-col justify-end">
+              <div className="absolute inset-0">
+                <Image 
+                  src={featuredProducts.jewelry?.metadata?.image || "/images/mens_jewelry.png"} 
+                  alt="Featured Jewelry" 
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/70 to-transparent"></div>
               </div>
-            </div>
+              <div className="relative z-10 p-8">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <span className="text-[#a3a3a3] uppercase text-xs font-bold tracking-wider mb-2 block">
+                      {featuredProducts.jewelry ? "Handcrafted" : "New Arrival"}
+                    </span>
+                    <h3 className="text-2xl font-serif text-white mb-2">
+                      {featuredProducts.jewelry?.name || "Royal Cuban Link"}
+                    </h3>
+                    <div className="flex items-center gap-1 text-[#D4AF37] mb-3">
+                      {[1,2,3,4,5].map(i => <Star key={i} size={16} fill="currentColor" />)}
+                    </div>
+                    <p className="text-xl font-light">
+                      {featuredProducts.jewelry ? `₦${parseFloat(featuredProducts.jewelry.price).toLocaleString()}` : "$940.00"}
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-[#D4AF37] group-hover:text-black transition-all">
+                    <ArrowRight size={20} />
+                  </div>
+                </div>
+              </div>
+            </Link>
           </div>
-        </div>
+        )}
       </section>
 
       {/* Brand Values / Features */}
