@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Package, X, Save, Trash2, Camera, FileImage, FolderOpen, Link as LinkIcon, RefreshCcw } from "lucide-react";
+import { Plus, Search, Package, X, Save, Trash2, Camera, FileImage, FolderOpen, Link as LinkIcon, RefreshCcw, Pencil } from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
@@ -25,6 +25,7 @@ export default function AdminProductsPage() {
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [imageSource, setImageSource] = useState("url");
   const [form, setForm] = useState({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+  const [editingId, setEditingId] = useState(null);
 
   // Fetch products from Supabase on mount
   useEffect(() => {
@@ -108,6 +109,20 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleEdit = (product) => {
+    setEditingId(product.id);
+    setForm({
+      name: product.name,
+      sku: product.sku,
+      category: product.category,
+      price: product.price.replace(/[^\d.]/g, ''),
+      stock: product.stock,
+      description: product.description,
+      image: product.image
+    });
+    setShowModal(true);
+  };
+
   const handlePublish = async (e) => {
     e.preventDefault();
     if (!form.name || !form.price || !form.image) {
@@ -142,19 +157,39 @@ export default function AdminProductsPage() {
         }
       }
 
-      console.log("Calling Supabase insert...");
-      const { data, error } = await supabase
-        .from('products')
-        .insert([{
-          name: form.name,
-          sku: form.sku || `SKU-${Date.now()}`,
-          description: form.description,
-          category: form.category,
-          price: numericPrice,
-          stock: parseInt(form.stock) || 0,
-          metadata: { image: form.image }
-        }])
-        .select();
+      console.log(editingId ? "Attempting to update product in Supabase..." : "Attempting to publish to Supabase...");
+      
+      let result;
+      if (editingId) {
+        result = await supabase
+          .from('products')
+          .update({
+            name: form.name,
+            sku: form.sku,
+            description: form.description,
+            category: form.category,
+            price: numericPrice,
+            stock: parseInt(form.stock) || 0,
+            metadata: { image: form.image }
+          })
+          .eq('id', editingId)
+          .select();
+      } else {
+        result = await supabase
+          .from('products')
+          .insert([{
+            name: form.name,
+            sku: form.sku || `SKU-${Date.now()}`,
+            description: form.description,
+            category: form.category,
+            price: numericPrice,
+            stock: parseInt(form.stock) || 0,
+            metadata: { image: form.image }
+          }])
+          .select();
+      }
+
+      const { data, error } = result;
 
       if (error) {
         console.error("Supabase returned an error:", error);
@@ -162,25 +197,37 @@ export default function AdminProductsPage() {
       }
 
       if (!data || data.length === 0) {
-        console.warn("Insert seemed to work but no data was returned.");
+        console.warn("Operation seemed to work but no data was returned.");
         throw new Error("The product was saved but couldn't be retrieved. Please refresh the page to see if it appeared.");
       }
 
-      console.log("Insert successful! Data returned:", data[0]);
+      console.log("Operation successful! Data returned:", data[0]);
 
-      const newProduct = {
-        ...form,
+      const updatedProduct = {
         id: data[0].id,
-        dateAdded: new Date().toLocaleDateString()
+        name: data[0].name,
+        sku: data[0].sku,
+        category: data[0].category,
+        price: data[0].price.toString(),
+        stock: data[0].stock,
+        description: data[0].description,
+        image: data[0].metadata?.image || "/images/leather_watch.png",
+        dateAdded: new Date(data[0].created_at).toLocaleDateString()
       };
       
-      setCatalogProducts([newProduct, ...catalogProducts]);
+      if (editingId) {
+        setCatalogProducts(catalogProducts.map(p => p.id === editingId ? updatedProduct : p));
+      } else {
+        setCatalogProducts([updatedProduct, ...catalogProducts]);
+      }
+      
       setPublishSuccess(true);
       
       setTimeout(() => {
         setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
         setShowModal(false);
         setPublishSuccess(false);
+        setEditingId(null);
       }, 1500);
     } catch (error) {
       console.error("Full Error Object:", error);
@@ -232,7 +279,11 @@ export default function AdminProductsPage() {
             <RefreshCcw size={16} className={isLoading ? "animate-spin" : ""} />
           </button>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingId(null);
+              setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+              setShowModal(true);
+            }}
             className="flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-4 py-2 rounded-md text-black font-bold text-sm uppercase transition-colors shadow-[0_0_12px_rgba(212,175,55,0.3)]"
           >
             <Plus size={16} /> Add Product
@@ -321,12 +372,20 @@ export default function AdminProductsPage() {
                 <td className="py-4 px-2 text-white">{product.stock}</td>
                 <td className="py-4 px-2 text-[#D4AF37] font-semibold">{product.price.startsWith('$') || product.price.startsWith('₦') ? product.price : `$${product.price}`}</td>
                 <td className="py-4 px-2 text-right">
-                  <button 
-                    onClick={() => handleDelete(product.id)}
-                    className="text-gray-600 hover:text-red-400 p-1.5 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => handleEdit(product)}
+                      className="text-gray-600 hover:text-[#D4AF37] p-1.5 transition-colors"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(product.id)}
+                      className="text-gray-600 hover:text-red-400 p-1.5 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -360,8 +419,8 @@ export default function AdminProductsPage() {
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b border-[#222]">
               <div>
-                <h2 className="text-xl font-serif text-white">Add New Product</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Fill in the details to publish a product to your store.</p>
+                <h2 className="text-xl font-serif text-white">{editingId ? "Edit Product" : "Add New Product"}</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{editingId ? "Update the product details below." : "Fill in the details to publish a product to your store."}</p>
               </div>
               <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#1a1a1a]">
                 <X size={20} />
@@ -522,12 +581,12 @@ export default function AdminProductsPage() {
                 } disabled:opacity-70 disabled:cursor-not-allowed`}
               >
                 {isPublishing ? (
-                  <span className="animate-pulse">Publishing...</span>
+                  <span className="animate-pulse">{editingId ? "Updating..." : "Publishing..."}</span>
                 ) : publishSuccess ? (
-                  <>Published ✓</>
+                  <>{editingId ? "Updated ✓" : "Published ✓"}</>
                 ) : (
                   <>
-                    <Save size={16} /> Publish Product
+                    <Save size={16} /> {editingId ? "Update Product" : "Publish Product"}
                   </>
                 )}
               </button>
