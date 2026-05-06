@@ -118,14 +118,11 @@ export default function AdminProductsPage() {
     setIsPublishing(true);
     
     try {
-      // Check for Supabase session (RLS requires a real Supabase user)
+      // Check for Supabase session (RLS requires a real Supabase user or disabled RLS)
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Supabase Authentication Missing: You are likely logged in via the Emergency Admin fallback. To publish products, you must create a real Admin account in Supabase and sign in with it, or disable Row Level Security (RLS) on the products table.");
-      }
-
+      
       // Clean price (remove symbols)
-      const numericPrice = parseFloat(form.price.replace(/[^\d.]/g, ''));
+      const numericPrice = parseFloat(form.price.toString().replace(/[^\d.]/g, ''));
       
       if (isNaN(numericPrice)) {
         throw new Error("Invalid price format");
@@ -137,8 +134,8 @@ export default function AdminProductsPage() {
         const sizeInMB = sizeInBytes / (1024 * 1024);
         console.log(`Payload image size: ${sizeInMB.toFixed(2)}MB`);
         
-        if (sizeInMB > 0.8) {
-          throw new Error(`Image is too large (${sizeInMB.toFixed(2)}MB). Please use an image smaller than 0.5MB or use an image URL instead.`);
+        if (sizeInMB > 1.5) {
+          throw new Error(`Image is too large (${sizeInMB.toFixed(2)}MB). Please use an image smaller than 1MB or use an image URL instead.`);
         }
       }
 
@@ -178,8 +175,14 @@ export default function AdminProductsPage() {
       
       let errorMessage = error.message || "Failed to save to database";
       
+      // Specifically handle RLS / Permission errors
+      if (errorMessage.toLowerCase().includes("row-level security") || 
+          errorMessage.toLowerCase().includes("permission denied") || 
+          error.code === "42501") {
+        errorMessage = "Permission Denied: Row Level Security (RLS) is enabled on the 'products' table. Since you are using the Emergency Admin login, you must either:\n\n1. Disable RLS in Supabase (SQL Editor): \n   ALTER TABLE products DISABLE ROW LEVEL SECURITY;\n\n2. Or create a real Admin account in Supabase Auth and sign in with it.";
+      }
       // Specifically handle the "Load failed" / network error
-      if (errorMessage.toLowerCase().includes("load failed") || error.name === "TypeError") {
+      else if (errorMessage.toLowerCase().includes("load failed") || error.name === "TypeError") {
         errorMessage = "Network Connection Error: Could not reach the database. This usually happens if the Supabase URL is incorrect, blocked by an ad-blocker, or if the image size is too large for the network request.";
       }
       
