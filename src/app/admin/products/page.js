@@ -115,31 +115,34 @@ export default function AdminProductsPage() {
       return;
     }
 
+    console.log("Publishing initiated with form data:", { ...form, image: form.image?.substring(0, 50) + "..." });
     setIsPublishing(true);
     
     try {
-      // Check for Supabase session (RLS requires a real Supabase user or disabled RLS)
+      // Check for Supabase session
       const { data: { session } } = await supabase.auth.getSession();
+      console.log("Current session state:", session ? "Authenticated as " + session.user.email : "No session (Fallback Admin)");
       
-      // Clean price (remove symbols)
+      // Clean price
       const numericPrice = parseFloat(form.price.toString().replace(/[^\d.]/g, ''));
+      console.log("Parsed price:", numericPrice);
       
       if (isNaN(numericPrice)) {
-        throw new Error("Invalid price format");
+        throw new Error("Invalid price format. Please enter a valid number.");
       }
 
-      // Check image size if it's a data URL
+      // Check image size
       if (form.image.startsWith('data:')) {
         const sizeInBytes = Math.round((form.image.length * 3) / 4);
         const sizeInMB = sizeInBytes / (1024 * 1024);
-        console.log(`Payload image size: ${sizeInMB.toFixed(2)}MB`);
+        console.log(`Image size check: ${sizeInMB.toFixed(2)}MB`);
         
-        if (sizeInMB > 1.5) {
-          throw new Error(`Image is too large (${sizeInMB.toFixed(2)}MB). Please use an image smaller than 1MB or use an image URL instead.`);
+        if (sizeInMB > 2.0) {
+          throw new Error(`Image is too large (${sizeInMB.toFixed(2)}MB). Maximum allowed is 2MB. Please use a smaller image.`);
         }
       }
 
-      console.log("Attempting to publish to Supabase...");
+      console.log("Calling Supabase insert...");
       const { data, error } = await supabase
         .from('products')
         .insert([{
@@ -153,7 +156,17 @@ export default function AdminProductsPage() {
         }])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase returned an error:", error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        console.warn("Insert seemed to work but no data was returned.");
+        throw new Error("The product was saved but couldn't be retrieved. Please refresh the page to see if it appeared.");
+      }
+
+      console.log("Insert successful! Data returned:", data[0]);
 
       const newProduct = {
         ...form,
@@ -164,14 +177,13 @@ export default function AdminProductsPage() {
       setCatalogProducts([newProduct, ...catalogProducts]);
       setPublishSuccess(true);
       
-      // Reset form after success
       setTimeout(() => {
         setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
         setShowModal(false);
         setPublishSuccess(false);
       }, 1500);
     } catch (error) {
-      console.error("Error publishing product:", error);
+      console.error("Full Error Object:", error);
       
       let errorMessage = error.message || "Failed to save to database";
       
