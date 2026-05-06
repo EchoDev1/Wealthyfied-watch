@@ -148,7 +148,7 @@ export default function Home() {
                       {[1,2,3,4,5].map(i => <Star key={i} size={16} fill="currentColor" />)}
                     </div>
                     <p className="text-xl font-light">
-                      {featuredProducts.watch ? `₦${parseFloat(featuredProducts.watch.price).toLocaleString()}` : "$1,850.00"}
+                      {featuredProducts.watch ? `₦${parseFloat(featuredProducts.watch.price).toLocaleString()}` : "₦1,850,000.00"}
                     </p>
                   </div>
                   <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-[#D4AF37] group-hover:text-black transition-all">
@@ -182,7 +182,7 @@ export default function Home() {
                       {[1,2,3,4,5].map(i => <Star key={i} size={16} fill="currentColor" />)}
                     </div>
                     <p className="text-xl font-light">
-                      {featuredProducts.jewelry ? `₦${parseFloat(featuredProducts.jewelry.price).toLocaleString()}` : "$940.00"}
+                      {featuredProducts.jewelry ? `₦${parseFloat(featuredProducts.jewelry.price).toLocaleString()}` : "₦940,000.00"}
                     </p>
                   </div>
                   <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md group-hover:bg-[#D4AF37] group-hover:text-black transition-all">

@@ -10,8 +10,8 @@ const labelClass = "block text-xs uppercase tracking-widest text-gray-500 font-s
 
 // Fake homepage products the admin can delete
 const HOMEPAGE_PRODUCTS = [
-  { id: "home-1", name: "The Executive Chronograph", badge: "Best Seller", price: "$1,850.00", image: "/images/leather_watch.png", source: "Homepage — Masterpiece Collection" },
-  { id: "home-2", name: "Royal Cuban Link Chain", badge: "New Arrival", price: "$940.00", image: "/images/mens_jewelry.png", source: "Homepage — Masterpiece Collection" },
+  { id: "home-1", name: "The Executive Chronograph", badge: "Best Seller", price: "₦1,850,000.00", image: "/images/leather_watch.png", source: "Homepage — Masterpiece Collection" },
+  { id: "home-2", name: "Royal Cuban Link Chain", badge: "New Arrival", price: "₦940,000.00", image: "/images/mens_jewelry.png", source: "Homepage — Masterpiece Collection" },
 ];
 
 export default function AdminProductsPage() {

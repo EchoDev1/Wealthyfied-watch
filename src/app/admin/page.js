@@ -2,7 +2,7 @@ import { TrendingUp, DollarSign, Package, Activity, ShoppingBag, Users, Clipboar
 
 export default function AdminDashboard() {
   const stats = [
-    { label: "Total Revenue",    value: "$0.00",  icon: DollarSign,  sub: "No transactions yet"   },
+    { label: "Total Revenue",    value: "₦0.00",  icon: DollarSign,  sub: "No transactions yet"   },
     { label: "Active Orders",    value: "0",       icon: Package,     sub: "No orders placed yet"  },
     { label: "Registered Users", value: "0",       icon: Users,       sub: "Awaiting first signup" },
     { label: "Conversion Rate",  value: "0.0%",    icon: TrendingUp,  sub: "No data available"     },

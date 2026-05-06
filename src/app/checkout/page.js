@@ -61,14 +61,14 @@ export default function CheckoutPage() {
                 <div className="flex-1">
                   <h3 className="text-sm font-medium text-white mb-1">The Executive Chronograph</h3>
                   <p className="text-xs text-gray-500 mb-2">Ref: WX-7832</p>
-                  <p className="text-[#D4AF37] font-semibold text-sm">$1,850.00</p>
+                  <p className="text-[#D4AF37] font-semibold text-sm">₦1,850,000.00</p>
                 </div>
               </div>
 
               <div className="space-y-3 text-sm text-gray-400 border-t border-[#222] pt-4">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="text-white">$1,850.00</span>
+                  <span className="text-white">₦1,850,000.00</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Insured Shipping (Global)</span>
@@ -76,11 +76,11 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Taxes (Calculated at next step)</span>
-                  <span className="text-white">$0.00</span>
+                  <span className="text-white">₦0.00</span>
                 </div>
                 <div className="flex justify-between pt-4 border-t border-[#222] text-lg font-serif">
                   <span className="text-white">Total</span>
-                  <span className="text-[#D4AF37] font-bold">$1,850.00</span>
+                  <span className="text-[#D4AF37] font-bold">₦1,850,000.00</span>
                 </div>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function CheckoutPage() {
                       </>
                     ) : (
                       <>
-                        Pay $1,850.00 Securely
+                        Pay ₦1,850,000.00 Securely
                         <CheckCircle2 size={18} className="ml-2" />
                       </>
                     )}
