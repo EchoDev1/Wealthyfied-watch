@@ -233,7 +233,7 @@ export default function AdminProductsPage() {
             }}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-6 py-3 rounded-xl text-black font-bold text-xs uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)]"
           >
-            <Plus size={18} /> Add New Item
+            <Plus size={18} /> Add New Product
           </button>
         </div>
       </div>
@@ -271,7 +271,7 @@ export default function AdminProductsPage() {
                 <th className="py-5 px-6">SKU / Ref</th>
                 <th className="py-5 px-6">Status</th>
                 <th className="py-5 px-6">Inventory</th>
-                <th className="py-5 px-6">Valuation</th>
+                <th className="py-5 px-6">Price</th>
                 <th className="py-5 px-6 text-right">Management</th>
               </tr>
             </thead>
@@ -413,7 +413,7 @@ export default function AdminProductsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div>
-                    <label className={labelClass}>Asset Name</label>
+                    <label className={labelClass}>Product Name</label>
                     <input type="text" placeholder="e.g. Royal Oak Offshore" value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
                   </div>

@@ -122,9 +122,9 @@ function PortalContent() {
             <div className="flex justify-between items-center mb-10">
               <div>
                 <h2 className="text-3xl font-serif text-white flex items-center gap-3">
-                  <ShieldCheck className="text-[#D4AF37]" size={28} /> My Acquisitions
+                  <ShieldCheck className="text-[#D4AF37]" size={28} /> My Collection
                 </h2>
-                <p className="text-xs text-gray-500 mt-2 uppercase tracking-widest">Chronicle of your luxury investments</p>
+                <p className="text-xs text-gray-500 mt-2 uppercase tracking-widest">Chronicle of your luxury acquisitions</p>
               </div>
               <Link href="/products" className="text-[10px] text-[#D4AF37] uppercase tracking-[0.2em] font-black border-b border-[#D4AF37] pb-1 hover:text-white hover:border-white transition-all">New Collection</Link>
             </div>
@@ -153,7 +153,7 @@ function PortalContent() {
                         {order.status}
                       </span>
                       <Link href={`/portal/orders/${order.id}`} className="text-gray-500 hover:text-[#D4AF37] flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all">
-                        VIEW ASSET <ArrowRight size={14} />
+                        VIEW PRODUCT <ArrowRight size={14} />
                       </Link>
                     </div>
                   </div>
@@ -209,7 +209,7 @@ function PortalContent() {
             <h3 className="font-serif text-2xl text-white">Private Advisor</h3>
             <p className="text-[#D4AF37] text-[10px] uppercase tracking-[0.3em] font-black mb-6">Concierge Protocol Active</p>
             <p className="text-gray-500 text-sm mb-10 leading-relaxed font-light">
-              &quot;Greetings. I am here to facilitate authentication protocols, arrange private viewings, or curate your next investment.&quot;
+              &quot;Greetings. I am here to facilitate authentication protocols, arrange private viewings, or curate your next purchase.&quot;
             </p>
             <div className="space-y-4">
               <Link href="/contact" className="block w-full py-4 bg-[#D4AF37] text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg">
