@@ -179,7 +179,14 @@ export default function AdminProductsPage() {
       if (errorMessage.toLowerCase().includes("row-level security") || 
           errorMessage.toLowerCase().includes("permission denied") || 
           error.code === "42501") {
-        errorMessage = "Permission Denied: Row Level Security (RLS) is enabled on the 'products' table. Since you are using the Emergency Admin login, you must either:\n\n1. Disable RLS in Supabase (SQL Editor): \n   ALTER TABLE products DISABLE ROW LEVEL SECURITY;\n\n2. Or create a real Admin account in Supabase Auth and sign in with it.";
+        
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (currentSession) {
+          errorMessage = `Permission Denied: You are logged in as "${currentSession.user.email}", but your account does not have Admin permissions in the 'profiles' table.\n\nTo fix this, run this in Supabase SQL Editor:\nUPDATE profiles SET role = 'admin' WHERE id = '${currentSession.user.id}';`;
+        } else {
+          errorMessage = "Permission Denied: You are using the Emergency Admin login, but Row Level Security (RLS) is enabled on the 'products' table.\n\nTo fix this, run this in Supabase SQL Editor:\nALTER TABLE products DISABLE ROW LEVEL SECURITY;";
+        }
       }
       // Specifically handle the "Load failed" / network error
       else if (errorMessage.toLowerCase().includes("load failed") || error.name === "TypeError") {
