@@ -1,66 +1,164 @@
-import { Download, Filter, Search, ShoppingBag } from "lucide-react";
+"use client";
 
-export const metadata = { title: "Orders Management - Wealthyfied Admin" };
+import { useState, useEffect } from "react";
+import { Download, Filter, Search, ShoppingBag, RefreshCcw, ExternalLink, ChevronRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminOrdersPage() {
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-serif text-white">Order Logs</h1>
-          <p className="text-gray-400 text-sm">Monitor and manage all client transactions.</p>
-        </div>
-        <button
-          disabled
-          className="flex items-center gap-2 bg-[#1a1a1a] border border-[#2a2a2a] px-4 py-2 rounded-md text-gray-600 font-bold text-sm uppercase cursor-not-allowed"
-        >
-          <Download size={16} /> Export CSV
-        </button>
-      </div>
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
-      <div className="bg-[#121212] border border-[#222] rounded-xl overflow-hidden p-6">
-        {/* Search/Filter bar */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-2.5 text-gray-600" size={16} />
-            <input
-              type="text"
-              placeholder="Search orders..."
-              disabled
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-10 py-2 text-gray-700 text-sm cursor-not-allowed placeholder:text-gray-700"
-            />
-          </div>
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          profiles:user_id (full_name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+    }).format(amount);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'delivered': return 'bg-green-500/10 text-green-500 border-green-500/20';
+      case 'shipped': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      case 'processing': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+      case 'cancelled': return 'bg-red-500/10 text-red-500 border-red-500/20';
+      default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+    }
+  };
+
+  const filteredOrders = orders.filter(order => 
+    order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    order.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111] p-8 rounded-2xl border border-[#222]">
+        <div>
+          <h1 className="text-4xl font-serif text-white mb-2">Order Ledger</h1>
+          <p className="text-gray-500 text-sm">Real-time transaction monitoring and fulfillment management.</p>
+        </div>
+        <div className="flex gap-3 w-full md:w-auto">
           <button
-            disabled
-            className="flex items-center gap-2 border border-[#2a2a2a] px-3 py-2 rounded-md text-gray-700 text-sm cursor-not-allowed"
+            onClick={fetchOrders}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] px-5 py-3 rounded-xl text-gray-400 hover:text-white transition-all"
           >
-            <Filter size={16} /> Filters
+            <RefreshCcw size={18} className={isLoading ? "animate-spin text-[#D4AF37]" : ""} />
+            <span className="text-xs font-bold uppercase tracking-widest">Refresh</span>
+          </button>
+          <button
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-6 py-3 rounded-xl text-black font-bold text-xs uppercase tracking-widest transition-all"
+          >
+            <Download size={18} /> Export Data
           </button>
         </div>
+      </div>
 
-        {/* Table header */}
-        <table className="w-full text-left text-sm">
-          <thead className="text-gray-600 uppercase tracking-wider text-xs border-b border-[#222]">
-            <tr>
-              <th className="pb-3 font-medium">Order ID</th>
-              <th className="pb-3 font-medium">Client</th>
-              <th className="pb-3 font-medium">Date</th>
-              <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium text-right">Amount</th>
-            </tr>
-          </thead>
-        </table>
-
-        {/* Empty state */}
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-          <div className="h-16 w-16 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
-            <ShoppingBag size={26} className="text-[#333]" />
+      <div className="bg-[#111] border border-[#222] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-[#222] flex flex-col md:flex-row justify-between items-center gap-4 bg-[#0a0a0a]/30">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+            <input
+              type="text"
+              placeholder="Filter by Order ID or Client Name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#0a0a0a] border border-[#222] rounded-full px-12 py-3 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-all placeholder:text-gray-700"
+            />
           </div>
-          <h3 className="text-gray-500 font-serif text-xl">No Orders Yet</h3>
-          <p className="text-gray-700 text-sm max-w-sm leading-relaxed">
-            Customer orders will appear here as soon as they start placing purchases on the storefront.
-          </p>
+          <div className="flex items-center gap-4">
+             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 bg-[#1a1a1a] px-4 py-2 rounded-lg border border-[#222]">
+                {filteredOrders.length} Transactions Found
+             </span>
+          </div>
         </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse min-w-[900px]">
+            <thead className="text-gray-500 uppercase tracking-[0.2em] text-[10px] font-black border-b border-[#222] bg-[#0a0a0a]/50">
+              <tr>
+                <th className="py-5 px-6">Transaction ID</th>
+                <th className="py-5 px-6">Client Identity</th>
+                <th className="py-5 px-6">Timestamp</th>
+                <th className="py-5 px-6">Status</th>
+                <th className="py-5 px-6">Method</th>
+                <th className="py-5 px-6 text-right">Revenue</th>
+                <th className="py-5 px-6"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1a1a1a]">
+              {filteredOrders.map((order) => (
+                <tr key={order.id} className="hover:bg-[#151515] transition-all group cursor-pointer">
+                  <td className="py-6 px-6 font-mono text-xs text-[#D4AF37]">#{order.id.substring(0, 8).toUpperCase()}</td>
+                  <td className="py-6 px-6">
+                    <span className="text-white font-medium block">{order.profiles?.full_name || "Guest Client"}</span>
+                    <span className="text-[10px] text-gray-600 uppercase tracking-tighter">VIP Standard</span>
+                  </td>
+                  <td className="py-6 px-6 text-gray-400 text-xs">
+                    {new Date(order.created_at).toLocaleString()}
+                  </td>
+                  <td className="py-6 px-6">
+                    <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getStatusColor(order.status)}`}>
+                      {order.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="py-6 px-6 text-xs uppercase tracking-widest text-gray-500 font-bold">{order.payment_method || "Opay"}</td>
+                  <td className="py-6 px-6 text-right text-white font-bold text-lg">{formatCurrency(order.total_amount)}</td>
+                  <td className="py-6 px-6 text-right">
+                    <button className="h-10 w-10 flex items-center justify-center bg-[#1a1a1a] border border-[#222] rounded-xl text-gray-600 group-hover:text-[#D4AF37] group-hover:border-[#D4AF37] transition-all">
+                      <ChevronRight size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {filteredOrders.length === 0 && !isLoading && (
+          <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+            <div className="h-20 w-20 rounded-full bg-[#0a0a0a] border border-[#222] flex items-center justify-center">
+              <ShoppingBag size={32} className="text-gray-800" />
+            </div>
+            <div>
+              <h3 className="text-gray-400 font-serif text-2xl">No Transactions Logged</h3>
+              <p className="text-gray-600 text-sm max-w-sm mx-auto mt-2">
+                Order activity will be recorded here in real-time as clients complete their purchases.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="py-32 flex flex-col items-center justify-center gap-4">
+            <RefreshCcw className="animate-spin text-[#D4AF37]" size={40} />
+            <span className="text-xs font-bold uppercase tracking-[0.3em] text-gray-600">Syncing Ledger...</span>
+          </div>
+        )}
       </div>
     </div>
   );

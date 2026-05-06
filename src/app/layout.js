@@ -1,5 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { Inter, Playfair_Display } from "next/font/google";
+import { CartProvider } from "@/lib/CartContext";
+import CustomCursor from "@/components/CustomCursor";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,10 +23,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${inter.variable} ${playfair.variable} antialiased bg-[#0a0a0a] text-[#fafafa]`}>
-        <Navbar />
-        <main className="min-h-screen pt-20">
-          {children}
-        </main>
+        <CartProvider>
+          <CustomCursor />
+          <Navbar />
+          <main className="min-h-screen pt-20">
+            {children}
+          </main>
+        </CartProvider>
       </body>
     </html>
   );

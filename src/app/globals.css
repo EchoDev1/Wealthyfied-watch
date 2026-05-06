@@ -44,12 +44,24 @@
   --foreground: #fafafa;
 }
 
+/* Custom Cursor Support */
+@media (hover: hover) and (pointer: fine) {
+  body, a, button, [role="button"] {
+    cursor: none !important;
+  }
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+a, button, [role="button"], select, input[type="checkbox"], input[type="radio"] {
+  cursor: pointer;
 }
 
 .glass-effect {

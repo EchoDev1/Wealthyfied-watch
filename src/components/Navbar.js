@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShoppingBag, User, Settings, Search, Menu, X, LogOut } from "lucide-react";
+import { ShoppingBag, User, Settings, Search, Menu, X, LogOut, ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useCart } from "@/lib/CartContext";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const { cartCount } = useCart();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const isHomePage = pathname === "/";
 
   useEffect(() => {
     // Check initial session
@@ -34,8 +41,17 @@ export default function Navbar() {
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20">
-          {/* Logo & Brand */}
-          <div className="flex-shrink-0 flex items-center">
+          {/* Back Button & Logo */}
+          <div className="flex-shrink-0 flex items-center gap-4">
+            {!isHomePage && (
+              <button 
+                onClick={() => router.back()}
+                className="p-2 hover:bg-white/5 rounded-full text-[#D4AF37] transition-all group"
+                title="Go Back"
+              >
+                <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+              </button>
+            )}
             <Link href="/" className="flex items-center group" onClick={() => setIsMobileMenuOpen(false)}>
               <svg width="40" height="40" md-width="48" md-height="48" viewBox="0 0 100 100" className="opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500 drop-shadow-[0_0_8px_rgba(212,175,55,0.3)]">
                 <defs>
@@ -102,9 +118,11 @@ export default function Navbar() {
             
             <Link href="/cart" className="text-gray-300 hover:text-[#D4AF37] transition-colors relative">
               <ShoppingBag size={20} />
-              <span className="absolute -top-1.5 -right-1.5 bg-[#D4AF37] text-black text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold">
-                0
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[#D4AF37] text-black text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-bold animate-pulse">
+                  {cartCount}
+                </span>
+              )}
             </Link>
 
             {/* Hamburger Button for Mobile */}

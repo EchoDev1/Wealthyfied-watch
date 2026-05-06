@@ -1,22 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Package, X, Save, Trash2, Camera, FileImage, FolderOpen, Link as LinkIcon, RefreshCcw, Pencil } from "lucide-react";
+import { 
+  Plus, Search, Package, X, Save, Trash2, Camera, FileImage, 
+  FolderOpen, Link as LinkIcon, RefreshCcw, Pencil, 
+  Eye, EyeOff, AlertCircle, CheckCircle2, ChevronRight, Image as ImageIcon
+} from "lucide-react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
-const inputClass = "w-full bg-[#0a0a0a] border border-[#333] rounded-md px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-colors placeholder:text-gray-600";
-const labelClass = "block text-xs uppercase tracking-widest text-gray-500 font-semibold mb-2";
-
-// Fake homepage products the admin can delete
-const HOMEPAGE_PRODUCTS = [
-  { id: "home-1", name: "The Executive Chronograph", badge: "Best Seller", price: "₦1,850,000.00", image: "/images/leather_watch.png", source: "Homepage — Masterpiece Collection" },
-  { id: "home-2", name: "Royal Cuban Link Chain", badge: "New Arrival", price: "₦940,000.00", image: "/images/mens_jewelry.png", source: "Homepage — Masterpiece Collection" },
-];
+const inputClass = "w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-all placeholder:text-gray-700 shadow-inner";
+const labelClass = "block text-[10px] uppercase tracking-[0.2em] text-gray-500 font-bold mb-2 ml-1";
 
 export default function AdminProductsPage() {
   const [showModal, setShowModal] = useState(false);
-  const [homepageProducts, setHomepageProducts] = useState(HOMEPAGE_PRODUCTS);
   const [catalogProducts, setCatalogProducts] = useState([]);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,7 +21,15 @@ export default function AdminProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [publishSuccess, setPublishSuccess] = useState(false);
   const [imageSource, setImageSource] = useState("url");
-  const [form, setForm] = useState({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+  const [form, setForm] = useState({ 
+    name: "", 
+    sku: "", 
+    category: "watch", 
+    price: "", 
+    stock: "", 
+    description: "", 
+    images: [] // Array of images
+  });
   const [editingId, setEditingId] = useState(null);
 
   // Fetch products from Supabase on mount
@@ -42,16 +47,16 @@ export default function AdminProductsPage() {
 
       if (error) throw error;
       
-      // Map database fields to UI format
       const formatted = data.map(p => ({
         id: p.id,
         name: p.name,
         sku: p.sku,
         category: p.category,
-        price: p.price.toString(),
+        price: p.price,
         stock: p.stock,
         description: p.description,
-        image: p.metadata?.image || "/images/leather_watch.png",
+        isActive: p.is_active,
+        images: p.metadata?.images || (p.metadata?.image ? [p.metadata.image] : []),
         dateAdded: new Date(p.created_at).toLocaleDateString()
       }));
       
@@ -64,48 +69,56 @@ export default function AdminProductsPage() {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm({ ...form, image: reader.result });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleFolderChange = (e) => {
     const files = Array.from(e.target.files);
-    const firstImage = files.find(f => f.type.startsWith('image/'));
-    if (firstImage) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm({ ...form, image: reader.result });
-      };
-      reader.readAsDataURL(firstImage);
+    files.forEach(file => {
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setForm(prev => ({ ...prev, images: [...prev.images, reader.result] }));
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  const toggleProductStatus = async (product) => {
+    try {
+      const newStatus = !product.isActive;
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: newStatus })
+        .eq('id', product.id);
+
+      if (error) throw error;
+      
+      setCatalogProducts(prev => prev.map(p => 
+        p.id === product.id ? { ...p, isActive: newStatus } : p
+      ));
+    } catch (error) {
+      console.error("Error toggling status:", error);
+      alert("Failed to update product status.");
     }
   };
 
-  const handleDelete = async (id, isHomepage = false) => {
-    if (isHomepage) {
-      setHomepageProducts((prev) => prev.filter((p) => p.id !== id));
-      setDeleteConfirm(null);
-      return;
-    }
-
+  const handleDelete = async (id) => {
     try {
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23503') {
+          throw new Error("This product cannot be deleted because it is linked to existing orders. Try making it 'Inactive' instead.");
+        }
+        throw error;
+      }
       
       setCatalogProducts((prev) => prev.filter((p) => p.id !== id));
       setDeleteConfirm(null);
     } catch (error) {
       console.error("Error deleting product:", error);
-      alert("Failed to delete product. Check console for details.");
+      alert(error.message || "Failed to delete product. It might be linked to orders.");
     }
   };
 
@@ -115,147 +128,70 @@ export default function AdminProductsPage() {
       name: product.name,
       sku: product.sku,
       category: product.category,
-      price: product.price.replace(/[^\d.]/g, ''),
-      stock: product.stock,
-      description: product.description,
-      image: product.image
+      price: product.price.toString(),
+      stock: product.stock.toString(),
+      description: product.description || "",
+      images: product.images || []
     });
     setShowModal(true);
   };
 
   const handlePublish = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.price || !form.image) {
-      alert("Please fill in the required fields (Name, Price, and Image)");
+    if (!form.name || !form.price || form.images.length === 0) {
+      alert("Please fill in the required fields (Name, Price, and at least one Image)");
       return;
     }
 
-    console.log("Publishing initiated with form data:", { ...form, image: form.image?.substring(0, 50) + "..." });
     setIsPublishing(true);
     
     try {
-      // Check for Supabase session
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("Current session state:", session ? "Authenticated as " + session.user.email : "No session (Fallback Admin)");
-      
-      // Clean price
       const numericPrice = parseFloat(form.price.toString().replace(/[^\d.]/g, ''));
-      console.log("Parsed price:", numericPrice);
-      
-      if (isNaN(numericPrice)) {
-        throw new Error("Invalid price format. Please enter a valid number.");
-      }
+      if (isNaN(numericPrice)) throw new Error("Invalid price format.");
 
-      // Check image size
-      if (form.image.startsWith('data:')) {
-        const sizeInBytes = Math.round((form.image.length * 3) / 4);
-        const sizeInMB = sizeInBytes / (1024 * 1024);
-        console.log(`Image size check: ${sizeInMB.toFixed(2)}MB`);
-        
-        if (sizeInMB > 2.0) {
-          throw new Error(`Image is too large (${sizeInMB.toFixed(2)}MB). Maximum allowed is 2MB. Please use a smaller image.`);
-        }
-      }
+      const payload = {
+        name: form.name,
+        sku: form.sku || `SKU-${Date.now()}`,
+        description: form.description,
+        category: form.category,
+        price: numericPrice,
+        stock: parseInt(form.stock) || 0,
+        is_active: true,
+        metadata: { images: form.images }
+      };
 
-      console.log(editingId ? "Attempting to update product in Supabase..." : "Attempting to publish to Supabase...");
-      
       let result;
       if (editingId) {
-        result = await supabase
-          .from('products')
-          .update({
-            name: form.name,
-            sku: form.sku,
-            description: form.description,
-            category: form.category,
-            price: numericPrice,
-            stock: parseInt(form.stock) || 0,
-            metadata: { image: form.image }
-          })
-          .eq('id', editingId)
-          .select();
+        result = await supabase.from('products').update(payload).eq('id', editingId).select();
       } else {
-        result = await supabase
-          .from('products')
-          .insert([{
-            name: form.name,
-            sku: form.sku || `SKU-${Date.now()}`,
-            description: form.description,
-            category: form.category,
-            price: numericPrice,
-            stock: parseInt(form.stock) || 0,
-            metadata: { image: form.image }
-          }])
-          .select();
+        result = await supabase.from('products').insert([payload]).select();
       }
 
       const { data, error } = result;
+      if (error) throw error;
 
-      if (error) {
-        console.error("Supabase returned an error:", error);
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        console.warn("Operation seemed to work but no data was returned.");
-        throw new Error("The product was saved but couldn't be retrieved. Please refresh the page to see if it appeared.");
-      }
-
-      console.log("Operation successful! Data returned:", data[0]);
-
-      const updatedProduct = {
-        id: data[0].id,
-        name: data[0].name,
-        sku: data[0].sku,
-        category: data[0].category,
-        price: data[0].price.toString(),
-        stock: data[0].stock,
-        description: data[0].description,
-        image: data[0].metadata?.image || "/images/leather_watch.png",
-        dateAdded: new Date(data[0].created_at).toLocaleDateString()
-      };
-      
-      if (editingId) {
-        setCatalogProducts(catalogProducts.map(p => p.id === editingId ? updatedProduct : p));
-      } else {
-        setCatalogProducts([updatedProduct, ...catalogProducts]);
-      }
-      
+      await fetchProducts(); // Refresh list
       setPublishSuccess(true);
       
       setTimeout(() => {
-        setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+        setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", images: [] });
         setShowModal(false);
         setPublishSuccess(false);
         setEditingId(null);
       }, 1500);
     } catch (error) {
-      console.error("Full Error Object:", error);
-      
-      let errorMessage = error.message || "Failed to save to database";
-      
-      // Specifically handle RLS / Permission errors
-      if (errorMessage.toLowerCase().includes("row-level security") || 
-          errorMessage.toLowerCase().includes("permission denied") || 
-          error.code === "42501") {
-        
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (currentSession) {
-          errorMessage = `Permission Denied: You are logged in as "${currentSession.user.email}", but your account does not have Admin permissions in the 'profiles' table.\n\nTo fix this, run this in Supabase SQL Editor:\nUPDATE profiles SET role = 'admin' WHERE id = '${currentSession.user.id}';`;
-        } else {
-          errorMessage = "Permission Denied: You are using the Emergency Admin login, but Row Level Security (RLS) is enabled on the 'products' table.\n\nTo fix this, run this in Supabase SQL Editor:\nALTER TABLE products DISABLE ROW LEVEL SECURITY;";
-        }
-      }
-      // Specifically handle the "Load failed" / network error
-      else if (errorMessage.toLowerCase().includes("load failed") || error.name === "TypeError") {
-        errorMessage = "Network Connection Error: Could not reach the database. This usually happens if the Supabase URL is incorrect, blocked by an ad-blocker, or if the image size is too large for the network request.";
-      }
-      
-      alert("Error: " + errorMessage);
+      console.error("Error saving product:", error);
+      alert("Error: " + (error.message || "Failed to save product"));
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  const removeImage = (index) => {
+    setForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
   const filteredProducts = catalogProducts.filter(p => 
@@ -263,330 +199,358 @@ export default function AdminProductsPage() {
     p.sku.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+    }).format(amount);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 pb-20">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#111] p-8 rounded-2xl border border-[#222]">
         <div>
-          <h1 className="text-3xl font-serif text-white">Inventory</h1>
-          <p className="text-gray-400 text-sm">Manage the entire watch and jewelry collection catalog.</p>
+          <h1 className="text-4xl font-serif text-white mb-2">Master Inventory</h1>
+          <p className="text-gray-500 text-sm flex items-center gap-2">
+            <Package size={14} className="text-[#D4AF37]" />
+            Manage your global collection of luxury timepieces and jewelry.
+          </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 w-full md:w-auto">
           <button
             onClick={fetchProducts}
-            className="flex items-center gap-2 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] px-4 py-2 rounded-md text-gray-400 hover:text-white transition-colors"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] px-5 py-3 rounded-xl text-gray-400 hover:text-white transition-all"
           >
-            <RefreshCcw size={16} className={isLoading ? "animate-spin" : ""} />
+            <RefreshCcw size={18} className={isLoading ? "animate-spin text-[#D4AF37]" : ""} />
+            <span className="text-xs font-bold uppercase tracking-widest">Sync</span>
           </button>
           <button
             onClick={() => {
               setEditingId(null);
-              setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", image: "" });
+              setForm({ name: "", sku: "", category: "watch", price: "", stock: "", description: "", images: [] });
               setShowModal(true);
             }}
-            className="flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-4 py-2 rounded-md text-black font-bold text-sm uppercase transition-colors shadow-[0_0_12px_rgba(212,175,55,0.3)]"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-6 py-3 rounded-xl text-black font-bold text-xs uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)]"
           >
-            <Plus size={16} /> Add Product
+            <Plus size={18} /> Add New Item
           </button>
         </div>
       </div>
 
-      {/* Homepage Featured Products (deletable) */}
-      {homepageProducts.length > 0 && (
-        <div className="bg-[#121212] border border-[#D4AF37]/20 rounded-xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="text-lg font-serif text-white">Homepage Featured Products</h2>
-              <p className="text-xs text-gray-500 mt-0.5">These are the placeholder cards on the public homepage. Delete them when you&apos;re ready to add your real products.</p>
+      {/* Main Catalog Table */}
+      <div className="bg-[#111] border border-[#222] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-[#222] flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search by name, SKU or reference..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#0a0a0a] border border-[#222] rounded-full px-12 py-3 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-all placeholder:text-gray-700" 
+            />
+          </div>
+          <div className="flex items-center gap-6 text-xs text-gray-500 uppercase tracking-widest font-bold">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+              <span>{catalogProducts.filter(p => p.isActive).length} Active</span>
             </div>
-            <span className="text-xs bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-3 py-1 rounded-full">Placeholder</span>
-          </div>
-          <div className="space-y-3">
-            {homepageProducts.map((product) => (
-              <div key={product.id} className="flex items-center justify-between p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-lg bg-black border border-[#333] overflow-hidden relative">
-                    <Image src={product.image} alt={product.name} width={48} height={48} className="w-full h-full object-cover opacity-70" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">{product.name}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{product.source} • <span className="text-[#D4AF37]">{product.badge}</span> • {product.price}</p>
-                  </div>
-                </div>
-                {deleteConfirm === product.id ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-red-400">Confirm delete?</span>
-                    <button onClick={() => handleDelete(product.id)} className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded hover:bg-red-500/30 transition-colors font-bold">Yes, Delete</button>
-                    <button onClick={() => setDeleteConfirm(null)} className="text-xs text-gray-500 hover:text-white px-2 py-1.5 transition-colors">Cancel</button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setDeleteConfirm(product.id)}
-                    className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 px-3 py-1.5 rounded transition-colors"
-                  >
-                    <Trash2 size={13} /> Remove
-                  </button>
-                )}
-              </div>
-            ))}
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-red-500"></div>
+              <span>{catalogProducts.filter(p => !p.isActive).length} Inactive</span>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Main Catalog */}
-      <div className="bg-[#121212] border border-[#222] rounded-xl overflow-hidden p-6">
-        <div className="relative w-64 mb-6">
-          <Search className="absolute left-3 top-2.5 text-gray-600" size={16} />
-          <input 
-            type="text" 
-            placeholder="Search catalog..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-10 py-2 text-white text-sm focus:outline-none focus:border-[#D4AF37] transition-colors placeholder:text-gray-700" 
-          />
-        </div>
-        <table className="w-full text-left text-sm border-collapse">
-          <thead className="text-gray-600 uppercase tracking-wider text-xs border-b border-[#222]">
-            <tr>
-              <th className="pb-3 font-medium px-2">Item Name</th>
-              <th className="pb-3 font-medium px-2">SKU</th>
-              <th className="pb-3 font-medium px-2">Category</th>
-              <th className="pb-3 font-medium px-2">Stock</th>
-              <th className="pb-3 font-medium px-2">Price</th>
-              <th className="pb-3 font-medium text-right px-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProducts.map((product) => (
-              <tr key={product.id} className="border-b border-[#1a1a1a] hover:bg-[#151515] transition-colors group">
-                <td className="py-4 px-2">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded bg-black border border-[#222] overflow-hidden">
-                      <Image src={product.image} alt={product.name} width={32} height={32} className="w-full h-full object-cover" />
-                    </div>
-                    <span className="text-white font-medium">{product.name}</span>
-                  </div>
-                </td>
-                <td className="py-4 px-2 text-gray-400">{product.sku}</td>
-                <td className="py-4 px-2 capitalize"><span className="px-2 py-0.5 rounded-full bg-[#1a1a1a] text-[#D4AF37] text-[10px] font-bold border border-[#D4AF37]/20">{product.category}</span></td>
-                <td className="py-4 px-2 text-white">{product.stock}</td>
-                <td className="py-4 px-2 text-[#D4AF37] font-semibold">{product.price.startsWith('$') || product.price.startsWith('₦') ? product.price : `$${product.price}`}</td>
-                <td className="py-4 px-2 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button 
-                      onClick={() => handleEdit(product)}
-                      className="text-gray-600 hover:text-[#D4AF37] p-1.5 transition-colors"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(product.id)}
-                      className="text-gray-600 hover:text-red-400 p-1.5 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse min-w-[1000px]">
+            <thead className="text-gray-500 uppercase tracking-[0.2em] text-[10px] font-black border-b border-[#222] bg-[#0a0a0a]/50">
+              <tr>
+                <th className="py-5 px-6">Product Details</th>
+                <th className="py-5 px-6">SKU / Ref</th>
+                <th className="py-5 px-6">Status</th>
+                <th className="py-5 px-6">Inventory</th>
+                <th className="py-5 px-6">Valuation</th>
+                <th className="py-5 px-6 text-right">Management</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[#1a1a1a]">
+              {filteredProducts.map((product) => (
+                <tr key={product.id} className={`hover:bg-[#151515] transition-all group ${!product.isActive ? 'opacity-60' : ''}`}>
+                  <td className="py-6 px-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 rounded-xl bg-black border border-[#222] overflow-hidden relative shrink-0">
+                        {product.images?.[0] ? (
+                          <Image src={product.images[0]} alt={product.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                        ) : (
+                          <ImageIcon className="absolute inset-0 m-auto text-gray-800" size={24} />
+                        )}
+                        {product.images?.length > 1 && (
+                          <div className="absolute bottom-1 right-1 bg-black/80 text-[8px] px-1 rounded border border-white/10 text-white">
+                            +{product.images.length - 1}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-white font-serif text-lg block group-hover:text-[#D4AF37] transition-colors">{product.name}</span>
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-[#D4AF37]/60 bg-[#D4AF37]/5 px-2 py-0.5 rounded-full border border-[#D4AF37]/10">{product.category}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-6 px-6 font-mono text-xs text-gray-400">{product.sku}</td>
+                  <td className="py-6 px-6">
+                    <button 
+                      onClick={() => toggleProductStatus(product)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
+                        product.isActive 
+                          ? "bg-green-500/10 border-green-500/20 text-green-500 hover:bg-green-500/20" 
+                          : "bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500/20"
+                      }`}
+                    >
+                      {product.isActive ? <Eye size={12} /> : <EyeOff size={12} />}
+                      {product.isActive ? "Live" : "Hidden"}
+                    </button>
+                  </td>
+                  <td className="py-6 px-6">
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-sm font-bold ${product.stock <= 2 ? 'text-red-400' : 'text-white'}`}>
+                        {product.stock} Units
+                      </span>
+                      {product.stock === 0 && <span className="text-[9px] text-red-500 uppercase font-black tracking-tighter">Out of Stock</span>}
+                      {product.stock <= 2 && product.stock > 0 && <span className="text-[9px] text-yellow-500 uppercase font-black tracking-tighter">Low Stock</span>}
+                    </div>
+                  </td>
+                  <td className="py-6 px-6 text-[#D4AF37] font-serif text-lg font-bold">{formatCurrency(product.price)}</td>
+                  <td className="py-6 px-6 text-right">
+                    <div className="flex justify-end gap-3">
+                      <button 
+                        onClick={() => handleEdit(product)}
+                        className="h-10 w-10 flex items-center justify-center bg-[#1a1a1a] border border-[#222] rounded-xl text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] transition-all"
+                        title="Edit Details"
+                      >
+                        <Pencil size={18} />
+                      </button>
+                      
+                      {deleteConfirm === product.id ? (
+                        <div className="flex items-center gap-2 animate-slide-left">
+                          <button 
+                            onClick={() => handleDelete(product.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white px-4 h-10 rounded-xl text-xs font-bold uppercase transition-all"
+                          >
+                            Delete
+                          </button>
+                          <button 
+                            onClick={() => setDeleteConfirm(null)}
+                            className="text-gray-500 hover:text-white px-2 text-xs font-bold uppercase transition-all"
+                          >
+                            X
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => setDeleteConfirm(product.id)}
+                          className="h-10 w-10 flex items-center justify-center bg-[#1a1a1a] border border-[#222] rounded-xl text-gray-400 hover:text-red-500 hover:border-red-500/50 transition-all"
+                          title="Delete Product"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        {filteredProducts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center">
-              <Package size={26} className="text-[#333]" />
+        {filteredProducts.length === 0 && !isLoading && (
+          <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
+            <div className="h-24 w-24 rounded-full bg-[#0a0a0a] border border-[#222] flex items-center justify-center shadow-inner">
+              <Package size={40} className="text-gray-800" />
             </div>
-            <h3 className="text-gray-500 font-serif text-xl">
-              {searchQuery ? "No matching products found" : "No Products Added Yet"}
-            </h3>
-            <p className="text-gray-700 text-sm max-w-sm leading-relaxed">
-              {searchQuery ? `We couldn't find anything matching "${searchQuery}"` : "Click Add Product above to list your first watch or jewelry item."}
-            </p>
-            {!searchQuery && (
-              <button onClick={() => setShowModal(true)} className="mt-2 flex items-center gap-2 bg-[#D4AF37] hover:bg-[#B5952F] px-6 py-2.5 rounded text-black font-bold text-sm uppercase tracking-widest transition-colors">
-                <Plus size={16} /> Add First Product
-              </button>
-            )}
+            <div>
+              <h3 className="text-gray-400 font-serif text-2xl">
+                {searchQuery ? "No matching assets found" : "Your Vault is Empty"}
+              </h3>
+              <p className="text-gray-600 text-sm max-w-sm mx-auto mt-2">
+                {searchQuery ? `We couldn't find any items matching "${searchQuery}" in your current inventory.` : "Begin by adding your first luxury timepiece or jewelry masterpiece to the catalog."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="py-32 flex flex-col items-center justify-center gap-4">
+            <RefreshCcw className="animate-spin text-[#D4AF37]" size={40} />
+            <span className="text-xs font-bold uppercase tracking-[0.3em] text-gray-600">Retrieving Secure Data...</span>
           </div>
         )}
       </div>
 
-      {/* Add Product Modal */}
+      {/* Add/Edit Product Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#111] border border-[#333] rounded-2xl w-full max-w-2xl shadow-2xl animate-fade-in">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/90 backdrop-blur-xl">
+          <div className="bg-[#111] border border-[#222] rounded-[2rem] w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] flex flex-col animate-fade-in">
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-6 border-b border-[#222]">
-              <div>
-                <h2 className="text-xl font-serif text-white">{editingId ? "Edit Product" : "Add New Product"}</h2>
-                <p className="text-xs text-gray-500 mt-0.5">{editingId ? "Update the product details below." : "Fill in the details to publish a product to your store."}</p>
+            <div className="flex justify-between items-center p-8 border-b border-[#222] bg-[#0a0a0a]/50">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center">
+                  {editingId ? <Pencil className="text-[#D4AF37]" size={24} /> : <Plus className="text-[#D4AF37]" size={24} />}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-serif text-white">{editingId ? "Update Masterwork" : "Publish New Asset"}</h2>
+                  <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">Catalog Entry / Secure Update Protocol</p>
+                </div>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-[#1a1a1a]">
-                <X size={20} />
+              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white transition-all p-3 rounded-2xl hover:bg-white/5 border border-transparent hover:border-white/10">
+                <X size={24} />
               </button>
             </div>
 
             {/* Modal Form */}
-            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="md:col-span-2">
-                  <label className={labelClass}>Product Name</label>
-                  <input type="text" placeholder="e.g. The Executive Chronograph" value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>SKU</label>
-                  <input type="text" placeholder="e.g. WX-7832" value={form.sku}
-                    onChange={(e) => setForm({ ...form, sku: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Category</label>
-                  <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputClass}>
-                    <option value="watch">Watch</option>
-                    <option value="jewelry">Jewelry</option>
-                    <option value="accessory">Accessory</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelClass}>Price (₦ or $)</label>
-                  <input type="text" placeholder="e.g. 1850000" value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Stock Quantity</label>
-                  <input type="number" min="0" placeholder="e.g. 10" value={form.stock}
-                    onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inputClass} />
-                </div>
-                <div className="md:col-span-2">
-                  <label className={labelClass}>Product Description</label>
-                  <textarea rows={4} placeholder="Describe the product..." value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    className={`${inputClass} resize-none`} />
+            <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div>
+                    <label className={labelClass}>Asset Name</label>
+                    <input type="text" placeholder="e.g. Royal Oak Offshore" value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Reference / SKU</label>
+                      <input type="text" placeholder="REF-8832" value={form.sku}
+                        onChange={(e) => setForm({ ...form, sku: e.target.value })} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Collection</label>
+                      <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputClass}>
+                        <option value="watch">Watch Collection</option>
+                        <option value="jewelry">Mens Jewelry</option>
+                        <option value="accessory">Luxury Accessories</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Price (₦)</label>
+                      <input type="text" placeholder="1850000" value={form.price}
+                        onChange={(e) => setForm({ ...form, price: e.target.value })} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Initial Stock</label>
+                      <input type="number" min="0" placeholder="10" value={form.stock}
+                        onChange={(e) => setForm({ ...form, stock: e.target.value })} className={inputClass} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Story & Specifications</label>
+                    <textarea rows={5} placeholder="Describe the craftsmanship..." value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      className={`${inputClass} resize-none`} />
+                  </div>
                 </div>
                 
-                {/* Image Preview Area */}
-                {form.image && (
-                  <div className="md:col-span-2 animate-fade-in">
-                    <label className={labelClass}>Image Preview</label>
-                    <div className="relative h-48 w-full bg-black rounded-xl border border-[#333] overflow-hidden group">
-                      <Image src={form.image} alt="Preview" fill className="w-full h-full object-contain" />
-                      <button 
-                        onClick={() => setForm({ ...form, image: "" })}
-                        className="absolute top-3 right-3 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="md:col-span-2">
-                  <label className={labelClass}>Select Image</label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                    {[
-                      { id: 'photos', label: 'Photos', icon: <Camera size={16} /> },
-                      { id: 'file', label: 'File', icon: <FileImage size={16} /> },
-                      { id: 'folder', label: 'Folder', icon: <FolderOpen size={16} /> },
-                      { id: 'url', label: 'URL', icon: <LinkIcon size={16} /> },
-                    ].map((src) => (
-                      <button
-                        key={src.id}
-                        type="button"
-                        onClick={() => setImageSource(src.id)}
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all ${
-                          imageSource === src.id
-                            ? "bg-[#D4AF37] border-[#D4AF37] text-black"
-                            : "bg-[#1a1a1a] border-[#333] text-gray-400 hover:border-[#555] hover:text-white"
-                        }`}
-                      >
-                        {src.icon} {src.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {imageSource === 'url' && (
-                    <div className="animate-fade-in">
-                      <input 
-                        type="text" 
-                        placeholder="https://... or /images/product.png" 
-                        className={inputClass} 
-                        value={form.image.startsWith('data:') ? "" : form.image}
-                        onChange={(e) => setForm({ ...form, image: e.target.value })}
-                      />
-                      <p className="text-xs text-gray-700 mt-2">Paste a public image URL or a local path.</p>
-                    </div>
-                  )}
-
-                  {imageSource === 'file' && (
-                    <div className="animate-fade-in">
-                      <div className="border-2 border-dashed border-[#333] rounded-xl p-8 text-center hover:border-[#D4AF37]/50 transition-colors group cursor-pointer relative">
-                        <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
-                        <FileImage size={32} className="mx-auto text-gray-600 group-hover:text-[#D4AF37] mb-3 transition-colors" />
-                        <p className="text-sm text-gray-400">Click or drag image file to upload</p>
-                        <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-widest">PNG, JPG, WEBP up to 5MB</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {imageSource === 'folder' && (
-                    <div className="animate-fade-in">
-                      <div className="border-2 border-dashed border-[#333] rounded-xl p-8 text-center hover:border-[#D4AF37]/50 transition-colors group cursor-pointer relative">
-                        <input 
-                          type="file" 
-                          webkitdirectory="" 
-                          directory="" 
-                          onChange={handleFolderChange}
-                          className="absolute inset-0 opacity-0 cursor-pointer" 
-                        />
-                        <FolderOpen size={32} className="mx-auto text-gray-600 group-hover:text-[#D4AF37] mb-3 transition-colors" />
-                        <p className="text-sm text-gray-400">Select a folder to upload multiple images</p>
-                        <p className="text-[10px] text-gray-600 mt-1 uppercase tracking-widest">All images in folder will be scanned</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {imageSource === 'photos' && (
-                    <div className="animate-fade-in grid grid-cols-3 gap-2 bg-[#1a1a1a] p-3 rounded-lg border border-[#333] max-h-40 overflow-y-auto">
-                      {['/images/leather_watch.png', '/images/mens_jewelry.png', '/images/hero_watch.png'].map((img, i) => (
-                        <div 
-                          key={i} 
-                          onClick={() => setForm({ ...form, image: img })}
-                          className={`aspect-square bg-black rounded border overflow-hidden hover:border-[#D4AF37] cursor-pointer transition-colors relative group ${form.image === img ? 'border-[#D4AF37]' : 'border-[#333]'}`}
-                        >
-                          <Image src={img} alt={`Preview ${i}`} width={100} height={100} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                <div className="space-y-6">
+                  <div>
+                    <label className={labelClass}>Media Assets ({form.images.length})</label>
+                    
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                      {form.images.map((img, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-2xl bg-black border border-[#333] overflow-hidden group">
+                          <Image src={img} alt={`Asset ${idx}`} fill className="object-cover" />
+                          <button 
+                            onClick={() => removeImage(idx)}
+                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100"
+                          >
+                            <X size={14} />
+                          </button>
                         </div>
                       ))}
-                      <div className="aspect-square bg-[#0a0a0a] rounded border border-[#333] border-dashed flex items-center justify-center text-gray-700 hover:text-gray-500 cursor-pointer">
-                        <Plus size={20} />
-                      </div>
+                      {form.images.length < 6 && (
+                        <label className="aspect-square rounded-2xl border-2 border-dashed border-[#222] flex flex-col items-center justify-center text-gray-700 hover:text-[#D4AF37] hover:border-[#D4AF37]/50 transition-all cursor-pointer bg-[#0a0a0a]">
+                          <Plus size={24} />
+                          <span className="text-[8px] uppercase font-black mt-2 tracking-widest">Add Image</span>
+                          <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
+                        </label>
+                      )}
                     </div>
-                  )}
+
+                    <div className="bg-[#0a0a0a] rounded-2xl border border-[#222] p-6">
+                       <label className={labelClass}>Add via URL</label>
+                       <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="https://..." 
+                            className={`${inputClass} h-11`}
+                            id="url-input"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const val = e.target.value;
+                                if (val) {
+                                  setForm(prev => ({ ...prev, images: [...prev.images, val] }));
+                                  e.target.value = '';
+                                }
+                              }
+                            }}
+                          />
+                          <button 
+                            onClick={() => {
+                              const input = document.getElementById('url-input');
+                              if (input.value) {
+                                setForm(prev => ({ ...prev, images: [...prev.images, input.value] }));
+                                input.value = '';
+                              }
+                            }}
+                            className="bg-[#D4AF37] text-black px-4 rounded-lg font-bold"
+                          >
+                            <ChevronRight size={20} />
+                          </button>
+                       </div>
+                       <p className="text-[10px] text-gray-600 mt-3 flex items-center gap-2">
+                          <AlertCircle size={10} /> 
+                          Recommended size: 1000x1000px (WEBP/PNG)
+                       </p>
+                    </div>
+                  </div>
+                  
+                  {/* Status Indicator */}
+                  <div className="p-6 bg-[#0a0a0a] rounded-2xl border border-[#222] flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold uppercase tracking-widest text-white">Status Preview</span>
+                      <p className="text-[10px] text-gray-500 mt-1">Asset will be live immediately after publishing.</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-green-500">
+                       <CheckCircle2 size={16} />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Available</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex justify-end gap-3 p-6 border-t border-[#222]">
-              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 text-gray-400 hover:text-white border border-[#333] hover:border-[#555] rounded text-sm uppercase tracking-widest transition-colors">
+            <div className="p-8 border-t border-[#222] bg-[#0a0a0a]/50 flex justify-end gap-4">
+              <button onClick={() => setShowModal(false)} className="px-8 py-3 text-gray-500 hover:text-white font-bold text-xs uppercase tracking-widest transition-all">
                 Cancel
               </button>
               <button 
                 onClick={handlePublish}
                 disabled={isPublishing || publishSuccess}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded text-black font-bold text-sm uppercase tracking-widest transition-all ${
+                className={`flex items-center gap-3 px-10 py-3 rounded-2xl text-black font-black text-xs uppercase tracking-widest transition-all ${
                   publishSuccess 
                     ? "bg-green-500" 
-                    : "bg-[#D4AF37] hover:bg-[#B5952F] shadow-[0_0_15px_rgba(212,175,55,0.2)]"
-                } disabled:opacity-70 disabled:cursor-not-allowed`}
+                    : "bg-[#D4AF37] hover:bg-[#B5952F] shadow-[0_10px_30px_rgba(212,175,55,0.2)]"
+                } disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-1`}
               >
                 {isPublishing ? (
-                  <span className="animate-pulse">{editingId ? "Updating..." : "Publishing..."}</span>
+                  <span className="animate-pulse">Processing Asset...</span>
                 ) : publishSuccess ? (
-                  <>{editingId ? "Updated ✓" : "Published ✓"}</>
+                  <><CheckCircle2 size={18} /> Success</>
                 ) : (
                   <>
-                    <Save size={16} /> {editingId ? "Update Product" : "Publish Product"}
+                    <Save size={18} /> {editingId ? "Update Asset" : "Publish Masterwork"}
                   </>
                 )}
               </button>
