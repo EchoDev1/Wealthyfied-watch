@@ -52,7 +52,7 @@ CREATE TABLE public.products (
     sku TEXT UNIQUE NOT NULL,
     description TEXT,
     category TEXT CHECK (category IN ('watch', 'jewelry', 'accessory')),
-    price NUMERIC(10,2) NOT NULL,
+    price NUMERIC(20,2) NOT NULL,
     stock INTEGER DEFAULT 0 NOT NULL,
     metadata JSONB DEFAULT '{}'::jsonb, -- Store specs, dimensions, materials
     is_active BOOLEAN DEFAULT true,
